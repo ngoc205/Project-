@@ -1099,3 +1099,15 @@
     font-size: 32px;
   }
 }
+
+
+.user-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #333;
+}
