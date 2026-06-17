@@ -1,0 +1,246 @@
+/* ==========================================================================
+   HỆ THỐNG BIẾN MÀU & ĐỊNH DẠNG CHUẨN UI/UX (ĐỘ TƯƠNG PHẢN CAO, DỊU MẮT)
+   ========================================================================== */
+:root {
+  --primary-gradient: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  --bg-main: #f4f6f8;             /* Nền ngoài cùng xám siêu nhẹ */
+  --text-main: #0f172a;           /* Chữ chính: Đen ngói đậm (Đọc cực rõ) */
+  --text-muted: #475569;          /* Chữ phụ: Xám đậm (Đậm hơn bản cũ) */
+  --border-color: #cbd5e1;        /* Đường viền bảng rõ nét hơn */
+  
+  /* Màu sắc Thẻ môn học */
+  --lesson-bg: #f8fafc;           /* Nền thẻ gần như trắng để nổi bật chữ */
+  --lesson-border: #2563eb;       /* Vạch viền xanh dương chuẩn */
+  
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.teacher-home-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-main);
+  background-color: var(--bg-main);
+  min-height: 100vh;
+}
+
+/* ==========================================================================
+   STYLING BANNER CHÀO MỪNG
+   ========================================================================== */
+.welcome-banner {
+  background: var(--primary-gradient);
+  color: #ffffff;
+  padding: 28px 36px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 300px;
+  height: 300px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.banner-content h2 {
+  margin: 0 0 6px 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.banner-content p {
+  margin: 0;
+  font-size: 16px;
+  color: #e2e8f0;
+}
+
+.highlight-text {
+  font-weight: 700;
+  color: #fbbf24; /* Vàng hổ phách, rõ nét trên nền xanh dương */
+  font-size: 17px;
+}
+
+.logout-btn {
+  background: #ffffff;
+  color: #dc2626; /* Chữ đỏ cảnh báo nhẹ */
+  border: none;
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.logout-btn:hover {
+  background-color: #fee2e2;
+  transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   STYLING KHU VỰC THỜI KHÓA BIỂU
+   ========================================================================== */
+.timetable-section {
+  background-color: #ffffff;
+  padding: 32px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid #e2e8f0;
+}
+
+.timetable-title {
+  text-align: left;
+  color: var(--text-main);
+  margin-bottom: 24px;
+  font-size: 22px;
+  font-weight: 800;
+  position: relative;
+  padding-left: 14px;
+}
+
+.timetable-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 5px;
+  background-color: #2563eb;
+  border-radius: 4px;
+}
+
+.table-responsive {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.timetable {
+  border-collapse: collapse;
+  text-align: center;
+  background-color: #ffffff;
+}
+
+/* Định dạng tiêu đề cột (Thứ) */
+.timetable th {
+  background-color: #f1f5f9; /* Xám sáng, tách biệt hẳn với ruột bảng */
+  color: #334155;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 16px 12px;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.timetable td {
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  height: 105px; 
+  width: 180px;  
+}
+
+/* Định dạng cột Tiết Học */
+.period-col {
+  width: 110px;
+  background-color: #f8fafc;
+}
+
+.period-cell {
+  font-weight: 700;
+  background-color: #f8fafc;
+  color: #475569;
+  font-size: 14px;
+}
+
+/* ==========================================================================
+   STYLING THẺ MÔN HỌC (TẬP TRUNG TỐI ĐA VÀO ĐỘ TƯƠNG PHẢN CHỮ)
+   ========================================================================== */
+.has-lesson {
+  background-color: #ffffff !important;
+  padding: 6px !important; 
+}
+
+.lesson-info {
+  background: var(--lesson-bg);
+  border-left: 4px solid var(--lesson-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  height: calc(100% - 4px);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  border: 1px solid #e2e8f0; /* Thêm viền mỏng bo quanh thẻ */
+  border-left: 4px solid var(--lesson-border); /* Giữ lại viền nhấn bên trái */
+  transition: all 0.2s ease;
+}
+
+.lesson-info:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: #bfdbfe;
+  background-color: #ffffff;
+}
+
+.subject-name {
+  font-weight: 800;
+  color: var(--text-main); /* Chuyển về Đen ngói để đọc sắc nét nhất */
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.class-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1d4ed8;
+  background-color: #dbeafe; /* Nền xanh lam cực nhạt */
+  padding: 4px 12px;
+  border-radius: 20px; 
+  display: inline-block;
+}
+
+.room-name {
+  font-size: 13px;
+  color: var(--text-muted); /* Xám đậm dễ đọc */
+  font-weight: 500;
+}
+
+/* Ô trống lịch học */
+.empty-lesson {
+  background-color: #ffffff;
+}
+
+.empty-dash {
+  color: #94a3b8; /* Tăng độ đậm của dấu gạch ngang lên để dễ thấy hơn */
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 80px 20px;
+  font-size: 16px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
