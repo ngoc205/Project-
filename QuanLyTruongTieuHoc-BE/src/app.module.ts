@@ -5,6 +5,9 @@ import { MonHocModule } from './mon-hoc/mon-hoc.module';
 import { LopHocModule } from './lop-hoc/lop-hoc.module';
 import { ThoiKhoaBieuModule } from './thoi-khoa-bieu/thoi-khoa-bieu.module';
 import { GiaovienModule } from './giaovien/giaovien.module';
+import { CanBoModule } from './can-bo/can-bo.module';
+import { HocSinhModule } from './hoc-sinh/hoc-sinh.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -18,8 +21,8 @@ import { GiaovienModule } from './giaovien/giaovien.module';
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: false,
       options: {
-        encrypt: false, // Tắt mã hóa nếu chạy local
-        trustServerCertificate: true, // Thêm dòng này để kết nối không bị chặn chứng chỉ local
+        encrypt: false,
+        trustServerCertificate: true,
       },
     }),
     AuthModule,
@@ -27,6 +30,9 @@ import { GiaovienModule } from './giaovien/giaovien.module';
     LopHocModule,
     ThoiKhoaBieuModule,
     GiaovienModule,
+    CanBoModule,
+    HocSinhModule,
+    UploadModule,
   ],
 })
 export class AppModule {}

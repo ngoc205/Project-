@@ -43,12 +43,19 @@ function formatDateView(value) {
   return new Date(value).toLocaleDateString('vi-VN');
 }
 
+function resolveImageSrc(value) {
+  if (!value) return '';
+  if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) return value;
+  return `/images/${value}`;
+}
+
 export default function AdminGiaoVienPage() {
   const [teachers, setTeachers] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const loadData = async () => {
     const [teacherRes, accountRes] = await Promise.all([
@@ -107,6 +114,23 @@ export default function AdminGiaoVienPage() {
       alert(err.response?.data?.message || 'Lưu giáo viên thất bại!');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const uploadImageFile = async (file) => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+    setUploadingImage(true);
+
+    try {
+      const res = await api.post('/upload/image', formData);
+      setForm((current) => ({ ...current, AnhDaiDien: res.data.filename }));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Upload ảnh thất bại!');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -201,6 +225,23 @@ export default function AdminGiaoVienPage() {
               placeholder="ten-file.png"
               onChange={(e) => setForm({ ...form, AnhDaiDien: e.target.value })}
             />
+            <input
+              type="file"
+              accept="image/*"
+              style={{ marginTop: '8px' }}
+              onChange={(e) => uploadImageFile(e.target.files?.[0])}
+            />
+            {uploadingImage && <div style={{ marginTop: '6px', color: '#64748b' }}>Đang tải ảnh...</div>}
+            {form.AnhDaiDien && (
+              <img
+                src={resolveImageSrc(form.AnhDaiDien)}
+                alt="Xem trước ảnh giáo viên"
+                onError={(e) => {
+                  e.currentTarget.src = '/images/doingugiaovien.jpg';
+                }}
+                style={{ display: 'block', marginTop: '10px', width: '72px', height: '72px', objectFit: 'cover', borderRadius: '50%', border: '1px solid #dbe3ef' }}
+              />
+            )}
           </label>
 
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -223,10 +264,11 @@ export default function AdminGiaoVienPage() {
         </form>
 
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', minWidth: '900px', borderCollapse: 'collapse', fontSize: '14px' }}>
+          <table style={{ width: '100%', minWidth: '980px', borderCollapse: 'collapse', fontSize: '14px' }}>
             <thead>
               <tr>
                 <th style={thStyle}>ID</th>
+                <th style={thStyle}>Ảnh</th>
                 <th style={thStyle}>Họ tên</th>
                 <th style={thStyle}>Tài khoản</th>
                 <th style={thStyle}>Ngày sinh</th>
@@ -240,6 +282,20 @@ export default function AdminGiaoVienPage() {
               {teachers.map((teacher) => (
                 <tr key={teacher.GiaoVienID}>
                   <td style={tdStyle}>{teacher.GiaoVienID}</td>
+                  <td style={tdStyle}>
+                    {teacher.AnhDaiDien ? (
+                      <img
+                        src={resolveImageSrc(teacher.AnhDaiDien)}
+                        alt={teacher.HoTen}
+                        onError={(e) => {
+                          e.currentTarget.src = '/images/doingugiaovien.jpg';
+                        }}
+                        style={{ width: '46px', height: '46px', objectFit: 'cover', borderRadius: '50%', border: '1px solid #dbe3ef' }}
+                      />
+                    ) : (
+                      <span style={{ color: '#94a3b8' }}>-</span>
+                    )}
+                  </td>
                   <td style={tdStyle}>
                     <strong>{teacher.HoTen}</strong>
                     {teacher.DiaChi && <div style={{ color: '#64748b', marginTop: '4px' }}>{teacher.DiaChi}</div>}
@@ -261,7 +317,7 @@ export default function AdminGiaoVienPage() {
               ))}
               {teachers.length === 0 && (
                 <tr>
-                  <td colSpan="8" style={{ ...tdStyle, textAlign: 'center', color: '#64748b' }}>
+                  <td colSpan="9" style={{ ...tdStyle, textAlign: 'center', color: '#64748b' }}>
                     Chưa có giáo viên.
                   </td>
                 </tr>

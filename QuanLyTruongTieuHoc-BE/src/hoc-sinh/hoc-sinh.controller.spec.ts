@@ -1,15 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CanBoController } from './can-bo.controller';
+import { HocSinhController } from './hoc-sinh.controller';
 
-describe('CanBoController', () => {
-  let controller: CanBoController;
+describe('HocSinhController', () => {
+  let controller: HocSinhController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [CanBoController],
+      controllers: [HocSinhController],
     }).compile();
 
-    controller = module.get<CanBoController>(CanBoController);
+    controller = module.get<HocSinhController>(HocSinhController);
   });
 
   it('should be defined', () => {
