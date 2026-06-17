@@ -4,7 +4,7 @@ import { MonHoc } from './mon-hoc.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('mon-hoc')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard) // Bảo vệ toàn bộ các API môn học bằng JWT token
 export class MonHocController {
   constructor(private readonly monHocService: MonHocService) {}
 

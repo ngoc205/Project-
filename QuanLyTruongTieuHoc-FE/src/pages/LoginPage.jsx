@@ -8,28 +8,39 @@ export default function LoginPage({ onNavigate }) {
     MatKhau: '' 
   });
 
-const handleLogin = async () => {
-  console.log("Đang gửi đăng nhập:", formData);
+  const handleLogin = async () => {
+    console.log("Đang gửi đăng nhập:", formData);
 
-  try {
-    const res = await api.post('/auth/login', formData);
+    try {
+      const res = await api.post('/auth/login', formData);
 
-    localStorage.setItem('token', res.data.accessToken);
+      // Lưu Token và Role vào localStorage
+      localStorage.setItem('token', res.data.accessToken);
+      
+      const userInfo = res.data.user;
+      localStorage.setItem('vaiTro', userInfo.VaiTro);
+      localStorage.setItem('user', JSON.stringify({
+        TaiKhoanID: userInfo.TaiKhoanID,
+        TenDangNhap: userInfo.TenDangNhap,
+        VaiTro: userInfo.VaiTro
+      }));
 
-    localStorage.setItem(
-      'user',
-      JSON.stringify({
-        TenDangNhap: formData.TenDangNhap
-      })
-    );
+      alert("Đăng nhập thành công!");
+      
+      // Rẽ nhánh điều hướng dựa vào VaiTro
+      if (userInfo.VaiTro === 'CanBo') {
+        onNavigate('admin-monhoc'); // Đẩy thẳng Cán bộ vào trang quản lý Môn học
+      } else if (userInfo.VaiTro === 'GiaoVien') {
+        onNavigate('teacher-dashboard'); // Đẩy Giáo viên vào trang xem TKB
+      } else {
+        onNavigate('home');
+      }
 
-    alert("Đăng nhập thành công!");
-    onNavigate('home');
-  } catch (err) {
-    console.error("Lỗi đăng nhập:", err);
-    alert("Đăng nhập thất bại! Sai tên đăng nhập hoặc mật khẩu.");
-  }
-};
+    } catch (err) {
+      console.error("Lỗi đăng nhập:", err);
+      alert("Đăng nhập thất bại! Sai tên đăng nhập hoặc mật khẩu.");
+    }
+  };
 
   return (
     <AuthLayout 
@@ -40,7 +51,7 @@ const handleLogin = async () => {
       <h1>Đăng nhập hệ thống</h1>
       <AuthField 
         label="Tên đăng nhập" 
-        placeholder="Nhập mã cán bộ"
+        placeholder="Nhập tài khoản"
         value={formData.TenDangNhap} 
         onChange={(e) => setFormData({...formData, TenDangNhap: e.target.value})}
       />
@@ -56,7 +67,6 @@ const handleLogin = async () => {
 
       <div className="auth-actions">
         <button type="button" onClick={() => onNavigate('home')}>Trang chủ</button>
-        <button type="button" onClick={() => onNavigate('register')}>Đăng ký</button>
       </div>
     </AuthLayout>
   );

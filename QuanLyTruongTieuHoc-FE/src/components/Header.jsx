@@ -8,6 +8,18 @@ function Header({
   user,
   onLogout
 }) {
+
+  // Hàm xử lý điều hướng khi bấm vào tên người dùng
+  const handleUserClick = () => {
+    if (!user) return;
+    
+    if (user.VaiTro === 'CanBo') {
+      onNavigate('admin-monhoc'); // Cán bộ -> Vào trang quản lý
+    } else if (user.VaiTro === 'GiaoVien') {
+      onNavigate('teacher-dashboard'); // Giáo viên -> Vào trang xem TKB
+    }
+  };
+
   return (
     <header className="site-header">
       <div className="container header-inner">
@@ -52,10 +64,27 @@ function Header({
         </nav>
 
         {user ? (
-          <div className="user-box">
-            <span className="user-name">
+          <div className="user-box" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            
+            {/* Đã thay đổi thẻ span thành button và thêm sự kiện onClick */}
+            <button 
+              className="user-name" 
+              type="button"
+              onClick={handleUserClick}
+              title="Đi đến trang bảng điều khiển của bạn"
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                cursor: 'pointer', 
+                fontSize: '1rem', 
+                color: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}
+            >
               👤 {user.TenDangNhap}
-            </span>
+            </button>
 
             <button
               className="primary-pill"

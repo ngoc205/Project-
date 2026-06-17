@@ -8,5 +8,6 @@ import { MonHocController } from './mon-hoc.controller';
   imports: [TypeOrmModule.forFeature([MonHoc])],
   controllers: [MonHocController],
   providers: [MonHocService],
+  exports: [TypeOrmModule], // Xuất ra phòng trường hợp các Module khác cần quan hệ (Relationships) sang bảng MonHoc
 })
 export class MonHocModule {}

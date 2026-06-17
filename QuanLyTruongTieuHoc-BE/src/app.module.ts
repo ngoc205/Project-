@@ -1,26 +1,25 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule } from './auth/auth.module';
+import { AuthModule } from './auth/auth.module'; 
 import { MonHocModule } from './mon-hoc/mon-hoc.module';
-import { TaiKhoan } from './auth/tai-khoan.entity';
-import { MonHoc } from './mon-hoc/mon-hoc.entity';
+
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'mssql',
-      host: '127.0.0.1',
-      port: 1433,
-      username: 'sa',
-      password: '123456Aa@', 
-      database: 'QL_TruongTieuHoc_LacLongQuan',
-      entities: [TaiKhoan, MonHoc],
-      synchronize: false,
-      options: {
-        encrypt: false,
-        trustServerCertificate: true,
-      },
-    }),
+  type: 'mssql',
+  host: 'localhost',
+  port: 1433,
+  username: 'sa',
+  password: '123456Aa@', 
+  database: 'PriSchool',
+  entities: [__dirname + '/**/*.entity{.ts,.js}'],
+  synchronize: false,
+  options: {
+    encrypt: false, // Tắt mã hóa nếu chạy local
+    trustServerCertificate: true, // Thêm dòng này để kết nối không bị chặn chứng chỉ local
+  },
+}),
     AuthModule,
     MonHocModule,
   ],
