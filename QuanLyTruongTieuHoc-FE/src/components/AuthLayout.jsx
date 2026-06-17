@@ -1,11 +1,16 @@
 import ImageCard from './ImageCard'
 import { image } from '../utils/images'
 
-export function AuthField({ label, placeholder, type = 'text' }) {
+export function AuthField({ label, placeholder, type = 'text', value, onChange }) {
   return (
     <label className="auth-field">
       {label}
-      <input type={type} placeholder={placeholder} />
+      <input 
+        type={type} 
+        placeholder={placeholder} 
+        value={value}      // Thêm dòng này để React kiểm soát giá trị
+        onChange={onChange} // Thêm dòng này để lắng nghe khi người dùng gõ
+      />
     </label>
   )
 }

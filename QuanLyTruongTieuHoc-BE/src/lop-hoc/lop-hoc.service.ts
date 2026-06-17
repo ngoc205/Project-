@@ -52,6 +52,21 @@ export class LopHocService {
 
   async getOptions() {
     const hasLopId = await this.hasHocSinhLopIdColumn();
+    const studentOptionsSql = hasLopId
+      ? `
+        SELECT hs.HocSinhID, hs.TenHocSinh, hs.NgaySinh, hs.GioiTinh, hs.DiaChi, hs.LopID, l.TenLop
+        FROM HocSinh hs
+        LEFT JOIN Lop l ON l.LopID = hs.LopID
+        WHERE ISNULL(hs.IsActive, 1) = 1
+        ORDER BY hs.TenHocSinh
+      `
+      : `
+        SELECT hs.HocSinhID, hs.TenHocSinh, hs.NgaySinh, hs.GioiTinh, hs.DiaChi, CAST(NULL AS INT) AS LopID, CAST(NULL AS VARCHAR(10)) AS TenLop
+        FROM HocSinh hs
+        WHERE ISNULL(hs.IsActive, 1) = 1
+        ORDER BY hs.TenHocSinh
+      `;
+
     const [khoi, lopMau, giaoVien, hocSinh] = await Promise.all([
       this.dataSource.query(`SELECT KhoiID, TenKhoi FROM Khoi ORDER BY KhoiID`),
       this.dataSource.query(`SELECT DISTINCT TenLop FROM Lop ORDER BY TenLop`),
@@ -61,13 +76,7 @@ export class LopHocService {
         WHERE ISNULL(gv.IsActive, 1) = 1
         ORDER BY gv.HoTen
       `),
-      this.dataSource.query(`
-        SELECT hs.HocSinhID, hs.TenHocSinh, hs.NgaySinh, hs.GioiTinh, hs.DiaChi, hs.LopID, l.TenLop
-        FROM HocSinh hs
-        LEFT JOIN Lop l ON l.LopID = hs.LopID
-        WHERE ISNULL(hs.IsActive, 1) = 1
-        ORDER BY hs.TenHocSinh
-      `),
+      this.dataSource.query(studentOptionsSql),
     ]);
 
     return {

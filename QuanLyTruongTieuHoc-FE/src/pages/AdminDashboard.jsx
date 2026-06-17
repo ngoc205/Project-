@@ -1,10 +1,10 @@
 import AdminMonHocPage from './AdminMonHocPage';
 import AdminTaiKhoanPage from './AdminTaiKhoanPage';
+import AdminGiaoVienPage from './AdminGiaoVienPage';
 import AdminLopHocPage from './AdminLopHocPage';
 import AdminThoiKhoaBieuPage from './AdminThoiKhoaBieuPage';
 
 export default function AdminDashboard({ page, onNavigate }) {
-  // Danh sách các menu dựa trên cấu trúc Database SQL
   const menuItems = [
     { id: 'admin-taikhoan', label: '👤 Quản lý Tài khoản' },
     { id: 'admin-canbo', label: '👔 Quản lý Cán bộ' },
@@ -16,10 +16,10 @@ export default function AdminDashboard({ page, onNavigate }) {
     { id: 'admin-thoikhoabieu', label: '📅 Quản lý Thời khóa biểu' },
   ];
 
+  const developedPages = ['admin-monhoc', 'admin-taikhoan', 'admin-giaovien', 'admin-lophoc', 'admin-thoikhoabieu'];
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
-      
-      {/* SIDEBAR - CỘT MENU BÊN TRÁI */}
       <div style={{ width: '260px', backgroundColor: '#1a365d', color: 'white', padding: '20px 0' }}>
         <h3 style={{ textAlign: 'center', marginBottom: '30px', borderBottom: '1px solid #2b6cb0', paddingBottom: '15px' }}>
           HỆ THỐNG ĐIỀU HÀNH
@@ -38,10 +38,10 @@ export default function AdminDashboard({ page, onNavigate }) {
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: '16px',
-                  transition: '0.3s'
+                  transition: '0.3s',
                 }}
-                onMouseOver={(e) => { if(page !== item.id) e.target.style.backgroundColor = '#2c5282' }}
-                onMouseOut={(e) => { if(page !== item.id) e.target.style.backgroundColor = 'transparent' }}
+                onMouseOver={(e) => { if (page !== item.id) e.target.style.backgroundColor = '#2c5282' }}
+                onMouseOut={(e) => { if (page !== item.id) e.target.style.backgroundColor = 'transparent' }}
               >
                 {item.label}
               </button>
@@ -50,20 +50,17 @@ export default function AdminDashboard({ page, onNavigate }) {
         </ul>
       </div>
 
-      {/* CONTENT - NỘI DUNG HIỂN THỊ BÊN PHẢI */}
       <div style={{ flex: 1, padding: '30px', backgroundColor: 'white', margin: '20px', borderRadius: '10px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-        
-        {/* Điều hướng render Component con */}
         {page === 'admin-monhoc' && <AdminMonHocPage />}
         {page === 'admin-taikhoan' && <AdminTaiKhoanPage />}
+        {page === 'admin-giaovien' && <AdminGiaoVienPage />}
         {page === 'admin-lophoc' && <AdminLopHocPage />}
         {page === 'admin-thoikhoabieu' && <AdminThoiKhoaBieuPage />}
-        
-        {/* Các trang chưa làm sẽ hiển thị tạm dòng này */}
-        {page !== 'admin-monhoc' && page !== 'admin-taikhoan' && page !== 'admin-lophoc' && page !== 'admin-thoikhoabieu' && (
+
+        {!developedPages.includes(page) && (
           <div style={{ textAlign: 'center', marginTop: '50px', color: '#718096' }}>
             <h2>Tính năng đang được phát triển...</h2>
-            <p>Vui lòng chọn "Quản lý Tài khoản" hoặc "Quản lý Môn học" để trải nghiệm.</p>
+            <p>Vui lòng chọn chức năng đã có trong menu để trải nghiệm.</p>
           </div>
         )}
       </div>

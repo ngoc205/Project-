@@ -12,26 +12,12 @@ export default function AdminTaiKhoanPage() {
       const res = await api.get('/tai-khoan');
       setTaiKhoans(res.data);
     } catch (err) {
-      console.error("Lỗi tải danh sách tài khoản", err);
+      console.error('Lỗi tải danh sách tài khoản', err);
     }
   };
 
   useEffect(() => {
-    let isMounted = true;
-
-    api.get('/tai-khoan')
-      .then((res) => {
-        if (isMounted) {
-          setTaiKhoans(res.data);
-        }
-      })
-      .catch((err) => {
-        console.error("Lỗi tải danh sách tài khoản", err);
-      });
-
-    return () => {
-      isMounted = false;
-    };
+    fetchTaiKhoans();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -39,28 +25,28 @@ export default function AdminTaiKhoanPage() {
     try {
       if (isEditing) {
         await api.put(`/tai-khoan/${editId}`, formData);
-        alert("Cập nhật thành công!");
+        alert('Cập nhật thành công!');
       } else {
         await api.post('/tai-khoan', formData);
-        alert("Thêm mới thành công!");
+        alert('Thêm mới thành công!');
       }
       setFormData({ TenDangNhap: '', MatKhau: '', VaiTro: 'GiaoVien' });
       setIsEditing(false);
       setEditId(null);
       fetchTaiKhoans();
     } catch (err) {
-      alert("Lỗi: " + (err.response?.data?.message || err.message));
+      alert('Lỗi: ' + (err.response?.data?.message || err.message));
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc muốn xóa tài khoản này?")) {
+    if (window.confirm('Bạn có chắc muốn xóa tài khoản này?')) {
       try {
         await api.delete(`/tai-khoan/${id}`);
         fetchTaiKhoans();
       } catch (err) {
-        console.error("Lỗi khi xóa tài khoản", err);
-        alert("Lỗi khi xóa tài khoản");
+        console.error('Lỗi khi xóa tài khoản', err);
+        alert('Lỗi khi xóa tài khoản');
       }
     }
   };
@@ -68,25 +54,30 @@ export default function AdminTaiKhoanPage() {
   return (
     <div>
       <h2 style={{ marginBottom: '20px', color: '#1a365d' }}>Quản Trị: Quản Lý Tài Khoản</h2>
-      
+
       <div style={{ display: 'flex', gap: '30px' }}>
-        {/* Form Thêm/Sửa */}
         <div style={{ flex: '1', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
           <h3>{isEditing ? 'Sửa Tài Khoản' : 'Thêm Tài Khoản'}</h3>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '15px' }}>
-            <input 
-              type="text" placeholder="Tên đăng nhập" required style={{ padding: '8px' }}
-              value={formData.TenDangNhap} 
-              onChange={e => setFormData({...formData, TenDangNhap: e.target.value})} 
+            <input
+              type="text"
+              placeholder="Tên đăng nhập"
+              required
+              style={{ padding: '8px' }}
+              value={formData.TenDangNhap}
+              onChange={e => setFormData({ ...formData, TenDangNhap: e.target.value })}
             />
-            <input 
-              type="text" placeholder="Mật khẩu (Plain text)" required style={{ padding: '8px' }}
-              value={formData.MatKhau} 
-              onChange={e => setFormData({...formData, MatKhau: e.target.value})} 
+            <input
+              type="text"
+              placeholder="Mật khẩu (Plain text)"
+              required
+              style={{ padding: '8px' }}
+              value={formData.MatKhau}
+              onChange={e => setFormData({ ...formData, MatKhau: e.target.value })}
             />
-            <select 
-              value={formData.VaiTro} 
-              onChange={e => setFormData({...formData, VaiTro: e.target.value})}
+            <select
+              value={formData.VaiTro}
+              onChange={e => setFormData({ ...formData, VaiTro: e.target.value })}
               style={{ padding: '8px' }}
             >
               <option value="GiaoVien">Giáo Viên</option>
@@ -94,13 +85,12 @@ export default function AdminTaiKhoanPage() {
             </select>
             <button type="submit" className="primary-button">{isEditing ? 'Lưu thay đổi' : 'Thêm mới'}</button>
             {isEditing && (
-              <button type="button" onClick={() => { setIsEditing(false); setFormData({TenDangNhap:'', MatKhau:'', VaiTro:'GiaoVien'})}} style={{ padding: '8px' }}>Hủy</button>
+              <button type="button" onClick={() => { setIsEditing(false); setFormData({ TenDangNhap: '', MatKhau: '', VaiTro: 'GiaoVien' }) }} style={{ padding: '8px' }}>Hủy</button>
             )}
           </form>
         </div>
 
-        {/* Bảng Dữ Liệu */}
-        <div style={{ flex: '3' }}> {/* Đổi flex thành 3 để bảng rộng hơn chứa đủ cột */}
+        <div style={{ flex: '3' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
             <thead>
               <tr style={{ backgroundColor: '#2b6cb0', color: 'white' }}>
@@ -118,17 +108,14 @@ export default function AdminTaiKhoanPage() {
                   <td style={{ padding: '12px', border: '1px solid #ddd' }}>{tk.TaiKhoanID}</td>
                   <td style={{ padding: '12px', border: '1px solid #ddd' }}>{tk.TenDangNhap}</td>
                   <td style={{ padding: '12px', border: '1px solid #ddd', fontWeight: 'bold', color: tk.VaiTro === 'CanBo' ? 'red' : 'green' }}>{tk.VaiTro}</td>
-                  
-                  {/* Bổ sung hiển thị thời gian */}
                   <td style={{ padding: '12px', border: '1px solid #ddd' }}>
                     {tk.NgayTao ? new Date(tk.NgayTao).toLocaleDateString('vi-VN') : ''}
                   </td>
                   <td style={{ padding: '12px', border: '1px solid #ddd' }}>
                     {tk.NgayCapNhat ? new Date(tk.NgayCapNhat).toLocaleDateString('vi-VN') : ''}
                   </td>
-
                   <td style={{ padding: '12px', border: '1px solid #ddd' }}>
-                    <button onClick={() => {setIsEditing(true); setEditId(tk.TaiKhoanID); setFormData({TenDangNhap: tk.TenDangNhap, MatKhau: tk.MatKhau, VaiTro: tk.VaiTro})}} style={{ marginRight: '10px', color: 'blue', cursor: 'pointer', background: 'none', border: 'none' }}>Sửa</button>
+                    <button onClick={() => { setIsEditing(true); setEditId(tk.TaiKhoanID); setFormData({ TenDangNhap: tk.TenDangNhap, MatKhau: tk.MatKhau, VaiTro: tk.VaiTro }) }} style={{ marginRight: '10px', color: 'blue', cursor: 'pointer', background: 'none', border: 'none' }}>Sửa</button>
                     <button onClick={() => handleDelete(tk.TaiKhoanID)} style={{ color: 'red', cursor: 'pointer', background: 'none', border: 'none' }}>Xóa</button>
                   </td>
                 </tr>

@@ -1099,10 +1099,6 @@
     font-size: 32px;
   }
 }
-<<<<<<< Updated upstream:primary-school-management-g2/src/App.css
-=======
-
-
 .user-box {
   display: flex;
   align-items: center;
@@ -1113,6 +1109,7 @@
   font-weight: 600;
   color: #333;
 }
+
 /* Viewer timetable - database driven */
 .viewer-filter-section {
   padding-bottom: 28px;
@@ -1307,4 +1304,3 @@
     font-size: 20px;
   }
 }
->>>>>>> Stashed changes:QuanLyTruongTieuHoc-FE/src/App.css

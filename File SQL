@@ -1,0 +1,263 @@
+-- Bạn mở SSMS, tạo một database tên PriSchool rồi chạy toàn bộ đoạn script dưới đây:
+ CREATE DATABASE PriSchool;
+ GO
+ USE PriSchool;
+ GO
+
+-- 1. Bảng TaiKhoan (Chỉ cho phép 'GiaoVien' và 'CanBo')
+CREATE TABLE TaiKhoan (
+    TaiKhoanID INT IDENTITY(1,1) PRIMARY KEY,
+    TenDangNhap VARCHAR(35) NOT NULL UNIQUE,
+    MatKhau VARCHAR(255) NOT NULL, -- Lưu text thô trực tiếp
+    VaiTro VARCHAR(20) NOT NULL CHECK (VaiTro IN ('GiaoVien', 'CanBo')),
+    IsActive BIT DEFAULT 1,
+    NgayTao DATETIME DEFAULT GETDATE(),
+    NgayCapNhat DATETIME DEFAULT GETDATE()
+);
+
+-- 2. Bảng CanBo (Đóng vai trò Admin cấp cao điều hành trường)
+CREATE TABLE CanBo (
+    CanBoID INT IDENTITY(1,1) PRIMARY KEY,
+    TaiKhoanID INT NULL FOREIGN KEY REFERENCES TaiKhoan(TaiKhoanID) ON DELETE SET NULL,
+    HoTen NVARCHAR(100) NOT NULL,
+    NgaySinh DATE NULL,
+    SoDienThoai VARCHAR(20) NULL,
+    ChucVu NVARCHAR(100) NULL,
+    IsActive BIT DEFAULT 1,
+    NgayTao DATETIME DEFAULT GETDATE(),
+    NgayCapNhat DATETIME DEFAULT GETDATE()
+);
+
+-- 3. Bảng GiaoVien
+CREATE TABLE GiaoVien (
+    GiaoVienID INT IDENTITY(1,1) PRIMARY KEY,
+    TaiKhoanID INT NULL FOREIGN KEY REFERENCES TaiKhoan(TaiKhoanID) ON DELETE SET NULL,
+    HoTen NVARCHAR(100) NOT NULL,
+    NgaySinh DATE NULL,
+    SoDienThoai VARCHAR(20) NULL,
+    DiaChi NVARCHAR(200) NULL,
+    AnhDaiDien VARCHAR(255) NULL,
+    IsActive BIT DEFAULT 1,
+    NgayTao DATETIME DEFAULT GETDATE(),
+    NgayCapNhat DATETIME DEFAULT GETDATE()
+);
+
+-- 4. Bảng HocSinh
+CREATE TABLE HocSinh (
+    HocSinhID INT IDENTITY(1,1) PRIMARY KEY,
+    TenHocSinh NVARCHAR(100) NOT NULL,
+    NgaySinh DATE NOT NULL,
+    GioiTinh NVARCHAR(10) NOT NULL CHECK (GioiTinh IN (N'Nam', N'Nữ')),
+    DiaChi NVARCHAR(200) NULL,
+    AnhDaiDien VARCHAR(255) NULL,
+    IsActive BIT DEFAULT 1,
+    NgayTao DATETIME DEFAULT GETDATE()
+);
+
+-- 5. Bảng Khoi
+CREATE TABLE Khoi (
+    KhoiID INT IDENTITY(1,1) PRIMARY KEY,
+    TenKhoi NVARCHAR(45) NOT NULL
+);
+
+-- 6. Bảng ThoiGian (Năm học & Học kỳ)
+CREATE TABLE ThoiGian (
+    ThoiGianID INT IDENTITY(1,1) PRIMARY KEY,
+    TenNam VARCHAR(20) NOT NULL,
+    TenKy NVARCHAR(20) NOT NULL,
+    IsCurrent BIT DEFAULT 0,
+    NgayBatDau DATE NULL,
+    NgayKetThuc DATE NULL
+);
+
+-- 7. Bảng Lop
+CREATE TABLE Lop (
+    LopID INT IDENTITY(1,1) PRIMARY KEY,
+    KhoiID INT NOT NULL FOREIGN KEY REFERENCES Khoi(KhoiID),
+    TenLop VARCHAR(10) NOT NULL,
+    ThoiGianID INT NOT NULL FOREIGN KEY REFERENCES ThoiGian(ThoiGianID),
+    GiaoVienID INT NULL FOREIGN KEY REFERENCES GiaoVien(GiaoVienID) ON DELETE SET NULL,
+    NgayTao DATETIME DEFAULT GETDATE()
+);
+
+-- 8. Bảng MonHoc
+CREATE TABLE MonHoc (
+    MonHocID INT IDENTITY(1,1) PRIMARY KEY,
+    TenMonHoc NVARCHAR(100) NOT NULL,
+    SoTiet TINYINT NOT NULL,
+    MoTa NVARCHAR(200) NULL,
+    IsActive BIT DEFAULT 1,
+    NgayTao DATETIME DEFAULT GETDATE(),
+    NgayCapNhat DATETIME DEFAULT GETDATE()
+);
+
+-- 9. Bảng MonHoc_Khoi
+CREATE TABLE MonHoc_Khoi (
+    MonHocID INT NOT NULL FOREIGN KEY REFERENCES MonHoc(MonHocID) ON DELETE CASCADE,
+    KhoiID INT NOT NULL FOREIGN KEY REFERENCES Khoi(KhoiID) ON DELETE CASCADE,
+    PRIMARY KEY (MonHocID, KhoiID)
+);
+
+-- 10. Bảng DiemThi
+CREATE TABLE DiemThi (
+    DiemThiID INT IDENTITY(1,1) PRIMARY KEY,
+    HocSinhID INT NOT NULL FOREIGN KEY REFERENCES HocSinh(HocSinhID) ON DELETE CASCADE,
+    ThoiGianID INT NOT NULL FOREIGN KEY REFERENCES ThoiGian(ThoiGianID),
+    MonHocID INT NOT NULL FOREIGN KEY REFERENCES MonHoc(MonHocID),
+    DiemMieng DECIMAL(4,2) NULL,
+    DiemGiuaKy DECIMAL(4,2) NULL,
+    DiemCuoiKy DECIMAL(4,2) NULL,
+    NgayCapNhat DATETIME DEFAULT GETDATE()
+);
+
+-- 11. Bảng HocBa
+CREATE TABLE HocBa (
+    HocBaID INT IDENTITY(1,1) PRIMARY KEY,
+    HocSinhID INT NOT NULL FOREIGN KEY REFERENCES HocSinh(HocSinhID) ON DELETE CASCADE,
+    LopID INT NOT NULL FOREIGN KEY REFERENCES Lop(LopID),
+    NhanXet NVARCHAR(MAX) NULL,
+    DoLenLop BIT DEFAULT 1,
+    NgayTao DATETIME DEFAULT GETDATE()
+);
+
+-- 12. Bảng Thu
+CREATE TABLE Thu (
+    ThuID INT IDENTITY(1,1) PRIMARY KEY,
+    TenThu NVARCHAR(10) NOT NULL,
+    ThuTu TINYINT NOT NULL
+);
+
+-- 13. Bảng TietHoc
+CREATE TABLE TietHoc (
+    TietHocID INT IDENTITY(1,1) PRIMARY KEY,
+    TenTiet NVARCHAR(20) NOT NULL,
+    TietSo TINYINT NOT NULL
+);
+
+-- 14. Bảng ThoiKhoaBieu
+CREATE TABLE ThoiKhoaBieu (
+    ThoiKhoaBieuID INT IDENTITY(1,1) PRIMARY KEY,
+    LopID INT NOT NULL FOREIGN KEY REFERENCES Lop(LopID) ON DELETE CASCADE,
+    ThuID INT NOT NULL FOREIGN KEY REFERENCES Thu(ThuID),
+    TietHocID INT NOT NULL FOREIGN KEY REFERENCES TietHoc(TietHocID),
+    MonHocID INT NOT NULL FOREIGN KEY REFERENCES MonHoc(MonHocID),
+    GiaoVienID INT NULL FOREIGN KEY REFERENCES GiaoVien(GiaoVienID),
+    GhiChu NVARCHAR(200) NULL
+);
+GO
+
+-- =========================================================
+-- KHỞI TẠO DỮ LIỆU MẪU (DÙNG TOÀN BỘ MẬT KHẨU CHUỖI THÔ '123')
+-- =========================================================
+
+SET IDENTITY_INSERT TaiKhoan ON;
+INSERT INTO TaiKhoan (TaiKhoanID, TenDangNhap, MatKhau, VaiTro, IsActive) VALUES
+(1, 'canbo_dung', '123', 'CanBo', 1),   -- Tài khoản cán bộ điều hành chính
+(2, 'canbo_lan', '123', 'CanBo', 1),    -- Cán bộ giáo vụ phụ trợ
+(3, 'giaovien_an', '123', 'GiaoVien', 1), 
+(4, 'giaovien_binh', '123', 'GiaoVien', 1);
+SET IDENTITY_INSERT TaiKhoan OFF;
+
+SET IDENTITY_INSERT CanBo ON;
+INSERT INTO CanBo (CanBoID, TaiKhoanID, HoTen, ChucVu, IsActive) VALUES
+(1, 1, N'Nguyễn Tiến Dũng', N'Trưởng phòng Đào tạo', 1),
+(2, 2, N'Phạm Thị Lan', N'Cán bộ Giáo vụ', 1);
+SET IDENTITY_INSERT CanBo OFF;
+
+SET IDENTITY_INSERT GiaoVien ON;
+INSERT INTO GiaoVien (GiaoVienID, TaiKhoanID, HoTen, NgaySinh, SoDienThoai, DiaChi, AnhDaiDien, IsActive) VALUES
+(1, 3, N'Nguyễn Văn An', '1985-04-12', '0912345678', N'Hà Nội', 'an_gv.png', 1),
+(2, 4, N'Trần Thị Bình', '1990-08-23', '0987654321', N'Hà Tĩnh', 'binh_gv.png', 1),
+(3, NULL, N'Lê Văn Cường', '1988-11-05', '0905123456', N'Đà Nẵng', NULL, 1);
+SET IDENTITY_INSERT GiaoVien OFF;
+
+SET IDENTITY_INSERT HocSinh ON;
+INSERT INTO HocSinh (HocSinhID, TenHocSinh, NgaySinh, GioiTinh, DiaChi, AnhDaiDien, IsActive) VALUES
+(1, N'Nguyễn Gia Bảo', '2019-03-15', N'Nam', N'Hà Nội', 'bao_hs.png', 1),
+(2, N'Lê Minh Anh', '2019-07-22', N'Nữ', N'Hà Tĩnh', 'anh_hs.png', 1),
+(3, N'Trần Tiến Đạt', '2018-05-10', N'Nam', N'Nghệ An', NULL, 1);
+SET IDENTITY_INSERT HocSinh OFF;
+
+SET IDENTITY_INSERT Khoi ON;
+INSERT INTO Khoi (KhoiID, TenKhoi) VALUES (1, N'Khối 1'), (2, N'Khối 2'), (3, N'Khối 3');
+SET IDENTITY_INSERT Khoi OFF;
+
+SET IDENTITY_INSERT ThoiGian ON;
+INSERT INTO ThoiGian (ThoiGianID, TenNam, TenKy, IsCurrent, NgayBatDau, NgayKetThuc) VALUES
+(1, '2025-2026', N'Học kỳ 1', 0, '2025-09-05', '2026-01-15'),
+(2, '2025-2026', N'Học kỳ 2', 1, '2026-01-16', '2026-05-25');
+SET IDENTITY_INSERT ThoiGian OFF;
+
+SET IDENTITY_INSERT Lop ON;
+INSERT INTO Lop (LopID, KhoiID, TenLop, ThoiGianID, GiaoVienID) VALUES
+(1, 1, '1A', 2, 1),
+(2, 1, '1B', 2, 2);
+SET IDENTITY_INSERT Lop OFF;
+
+SET IDENTITY_INSERT Thu ON;
+INSERT INTO Thu (ThuID, TenThu, ThuTu) VALUES
+(1, N'Thứ Hai', 2), (2, N'Thứ Ba', 3), (3, N'Thứ Tư', 4);
+SET IDENTITY_INSERT Thu OFF;
+
+SET IDENTITY_INSERT TietHoc ON;
+INSERT INTO TietHoc (TietHocID, TenTiet, TietSo) VALUES
+(1, N'Tiết 1 (Sáng)', 1), (2, N'Tiết 2 (Sáng)', 2);
+SET IDENTITY_INSERT TietHoc OFF;
+
+DBCC CHECKIDENT ('MonHoc', RESEED, 0);
+GO
+
+-- =======================================================
+-- BƯỚC 2: TẠO DỮ LIỆU BẢNG CHA (MonHoc) TRƯỚC
+-- =======================================================
+SET IDENTITY_INSERT MonHoc ON;
+INSERT INTO MonHoc (MonHocID, TenMonHoc, SoTiet, MoTa, IsActive) VALUES
+(1, N'Tiếng Việt', 10, N'Môn học rèn luyện kỹ năng đọc, viết, nghe, nói', 1),
+(2, N'Toán', 5, N'Môn học phát triển tư duy logic và tính toán', 1),
+(3, N'Ngoại ngữ 1 (Tiếng Anh)', 4, N'Tiếng Anh giao tiếp cơ bản cấp tiểu học', 1),
+(4, N'Đạo đức', 1, N'Giáo dục nhân cách, lối sống ứng xử', 1),
+(5, N'Tự nhiên và Xã hội', 2, N'Khám phá thế giới xung quanh dành cho Khối 1, 2, 3', 1),
+(6, N'Khoa học', 2, N'Kiến thức khoa học cơ bản dành cho Khối 4, 5', 1),
+(7, N'Lịch sử và Địa lí', 2, N'Kiến thức lịch sử, địa lý Việt Nam dành cho Khối 4, 5', 1),
+(8, N'Tin học', 1, N'Kỹ năng sử dụng máy tính và tư duy máy tính cơ bản', 1),
+(9, N'Giáo dục thể chất', 2, N'Rèn luyện sức khỏe, thể dục thể thao', 1),
+(10, N'Âm nhạc', 1, N'Giáo dục thẩm mỹ và năng khiếu âm nhạc', 1),
+(11, N'Mĩ thuật', 1, N'Giáo dục thẩm mỹ và năng khiếu hội họa', 1),
+(12, N'Hoạt động trải nghiệm', 3, N'Hoạt động ngoại khóa, rèn luyện kỹ năng sống', 1);
+SET IDENTITY_INSERT MonHoc OFF;
+GO
+
+-- =======================================================
+-- BƯỚC 3: TẠO DỮ LIỆU CÁC BẢNG CON (MonHoc_Khoi, DiemThi, ThoiKhoaBieu)
+-- =======================================================
+
+-- 3.1 Thêm phân bổ môn học cho khối
+INSERT INTO MonHoc_Khoi (MonHocID, KhoiID) VALUES 
+(1, 1), (2, 1), (4, 1), (5, 1),
+(1, 2), (2, 2), (4, 2), (5, 2),
+(1, 3), (2, 3), (3, 3), (5, 3);
+
+-- 3.2 Thêm Điểm thi mẫu
+SET IDENTITY_INSERT DiemThi ON;
+INSERT INTO DiemThi (DiemThiID, HocSinhID, ThoiGianID, MonHocID, DiemMieng, DiemGiuaKy, DiemCuoiKy) VALUES
+(1, 1, 2, 1, 9.00, 8.50, 9.00),
+(2, 1, 2, 2, 10.00, 9.50, 10.00),
+(3, 2, 2, 1, 8.00, 7.50, 8.00),
+(4, 2, 2, 2, 8.50, 9.00, 8.50),
+(5, 3, 2, 3, 7.00, 8.00, 8.50);
+SET IDENTITY_INSERT DiemThi OFF;
+
+-- 3.3 Thêm Thời khóa biểu mẫu
+SET IDENTITY_INSERT ThoiKhoaBieu ON;
+INSERT INTO ThoiKhoaBieu (ThoiKhoaBieuID, LopID, ThuID, TietHocID, MonHocID, GiaoVienID, GhiChu) VALUES
+(1, 1, 1, 1, 2, 1, N'Toán - Phòng 101'),
+(2, 1, 1, 2, 1, 1, N'Tiếng Việt - Phòng 101'),
+(3, 1, 2, 1, 4, 1, N'Đạo đức - Phòng 101'),
+(4, 2, 1, 1, 1, 2, N'Tiếng Việt - Phòng 102'),
+(5, 2, 1, 2, 2, 2, N'Toán - Phòng 102'),
+(6, 2, 3, 1, 5, 2, N'TN&XH - Sân trường');
+SET IDENTITY_INSERT ThoiKhoaBieu OFF;
+GO
+
+ALTER TABLE HOCSINH
+ADD LopID INT NULL;
