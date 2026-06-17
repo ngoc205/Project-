@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TaiKhoan } from './tai-khoan.entity';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -13,37 +12,16 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(data: any): Promise<any> {
-    if (!data.TenDangNhap || !data.MatKhau || !data.VaiTro) {
-      throw new BadRequestException('Vui lòng điền đầy đủ TenDangNhap, MatKhau và VaiTro!');
-    }
-
-    const exists = await this.taiKhoanRepository.findOne({ 
-      where: { TenDangNhap: data.TenDangNhap } 
-    });
-    if (exists) {
-      throw new BadRequestException('Tên đăng nhập này đã tồn tại trong hệ thống!');
-    }
-
-    const hashedPassword = await bcrypt.hash(data.MatKhau, 10);
-    const newAccount = this.taiKhoanRepository.create({
-      TenDangNhap: data.TenDangNhap,
-      MatKhau: hashedPassword,
-      VaiTro: data.VaiTro,
-      IsActive: true
-    });
-    
-const savedAccount = await this.taiKhoanRepository.save(newAccount);
-// Bóc tách MatKhau ra riêng, phần còn lại gom vào biến result
-const { MatKhau, ...result } = savedAccount; 
-return result;
-  }
+  // =========================================================
+  // ĐÃ XÓA HOÀN TOÀN HÀM REGISTER (KHÔNG CHO PHÉP ĐĂNG KÝ MỚI)
+  // =========================================================
 
   async login(data: any): Promise<any> {
     if (!data.TenDangNhap || !data.MatKhau) {
       throw new BadRequestException('Vui lòng điền đầy đủ TenDangNhap và MatKhau!');
     }
 
+    // Tìm kiếm tài khoản dựa vào tên đăng nhập
     const user = await this.taiKhoanRepository.findOne({ 
       where: { TenDangNhap: data.TenDangNhap } 
     });
@@ -52,15 +30,23 @@ return result;
       throw new UnauthorizedException('Tài khoản không tồn tại!');
     }
 
-    const isPasswordValid = await bcrypt.compare(data.MatKhau, user.MatKhau);
+    // SO SÁNH TRỰC TIẾP CHUỖI MẬT KHẨU THÔ (PLAIN TEXT) - KHÔNG DÙNG BCRYPT
+    const isPasswordValid = (data.MatKhau === user.MatKhau);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Sai mật khẩu!');
     }
 
+    // Kiểm tra trạng thái kích hoạt của tài khoản
     if (!user.IsActive) {
       throw new UnauthorizedException('Tài khoản của bạn đã bị khóa!');
     }
 
+    // RÀNG BUỘC PHÂN QUYỀN CHẶN ĐĂNG NHẬP: Chỉ chấp nhận Giáo viên và Cán bộ
+    if (user.VaiTro !== 'GiaoVien' && user.VaiTro !== 'CanBo') {
+      throw new UnauthorizedException('Tài khoản không có quyền truy cập vào hệ thống này!');
+    }
+
+    // Cấu hình thông tin lưu trữ vào Token
     const payload = { 
       username: user.TenDangNhap, 
       sub: user.TaiKhoanID, 
@@ -68,7 +54,13 @@ return result;
     };
 
     return {
+      message: 'Đăng nhập thành công!',
       accessToken: this.jwtService.sign(payload),
+      user: {
+        TaiKhoanID: user.TaiKhoanID,
+        TenDangNhap: user.TenDangNhap,
+        VaiTro: user.VaiTro
+      }
     };
   }
 }

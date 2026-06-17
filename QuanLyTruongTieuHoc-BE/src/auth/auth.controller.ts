@@ -1,21 +1,18 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Post('register')
-  register(@Body() body: any) {
-    return this.authService.register(body);
-  }
-
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   login(@Body() body: any) {
     return this.authService.login(body);
   }
 
   @Post('logout')
+  @HttpCode(HttpStatus.OK)
   logout() {
     return { message: 'Đăng xuất thành công!' };
   }

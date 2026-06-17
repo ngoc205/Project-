@@ -13,10 +13,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    // Sửa lại đoạn return này để RolesGuard có thể đọc được user.VaiTro
     return { 
-      userId: payload.sub, 
-      username: payload.username, 
-      role: payload.role 
+      TaiKhoanID: payload.sub, 
+      TenDangNhap: payload.username, 
+      VaiTro: payload.role // Đã đổi 'role' thành 'VaiTro'
     };
   }
 }

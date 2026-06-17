@@ -7,13 +7,13 @@ import HomePage from './pages/HomePage'
 import IntroPage from './pages/IntroPage'
 import LoginPage from './pages/LoginPage'
 import NewsPage from './pages/NewsPage'
-import RegisterPage from './pages/RegisterPage'
+import AdminDashboard from './pages/AdminDashboard'
 import SearchPage from './pages/SearchPage'
 import TimetablePage from './pages/TimetablePage'
-
+import TeacherDashboardPage from './pages/TeacherDashboardPage'
 import './App.css'
 
-const authPages = ['login', 'register']
+const authPages = ['login']
 
 function App() {
   const [page, setPage] = useState('home')
@@ -32,13 +32,37 @@ function App() {
 
   const changePage = (nextPage) => {
     const savedUser = localStorage.getItem('user')
+    let currentUser = null;
 
     if (savedUser) {
-      setUser(JSON.parse(savedUser))
+      currentUser = JSON.parse(savedUser)
+      setUser(currentUser)
     } else {
       setUser(null)
     }
 
+    // =========================================================
+    // LỚP BẢO VỆ PHÂN QUYỀN (FRONTEND GUARD)
+    // =========================================================
+    
+    // 1. Chặn người lạ hoặc Giáo viên vào khu vực Quản trị (Admin)
+    if (nextPage.startsWith('admin-')) {
+      if (!currentUser || currentUser.VaiTro !== 'CanBo') {
+        alert('⛔ TRUY CẬP BỊ TỪ CHỐI: Khu vực này chỉ dành riêng cho Cán bộ điều hành!');
+        return; // Hủy lệnh chuyển trang, đứng im tại chỗ
+      }
+    }
+
+    // 2. Chặn người lạ hoặc Cán bộ vào khu vực cá nhân của Giáo viên
+    if (nextPage.startsWith('teacher-')) {
+      if (!currentUser || currentUser.VaiTro !== 'GiaoVien') {
+        alert('⛔ TRUY CẬP BỊ TỪ CHỐI: Khu vực này chỉ dành cho Giáo viên!');
+        return; 
+      }
+    }
+    // =========================================================
+
+    // Nếu qua được vòng kiểm duyệt, cho phép đổi trang
     setPage(nextPage)
     setMenuOpen(false)
 
@@ -51,6 +75,7 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    localStorage.removeItem('vaiTro') // Xóa quyền khi đăng xuất
 
     setUser(null)
     setPage('home')
@@ -76,7 +101,13 @@ function App() {
         {page === 'timetable' && <TimetablePage />}
         {page === 'news' && <NewsPage />}
         {page === 'login' && <LoginPage onNavigate={changePage} />}
-        {page === 'register' && <RegisterPage onNavigate={changePage} />}
+        
+        {/* NẾU TRANG LÀ CỦA ADMIN, CHỈ CẦN GỌI ĐÚNG KHUNG DASHBOARD NÀY */}
+        {/* Các trang con như admin-monhoc, admin-taikhoan sẽ được render tự động bên trong AdminDashboard */}
+        {page.startsWith('admin-') && <AdminDashboard page={page} onNavigate={changePage} />}
+        
+        {/* TRANG DÀNH RIÊNG CHO GIÁO VIÊN */}
+        {page === 'teacher-dashboard' && <TeacherDashboardPage />}
       </main>
 
       {!isAuthPage && <Footer />}
