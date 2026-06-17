@@ -10,7 +10,7 @@ import NewsPage from './pages/NewsPage'
 import AdminDashboard from './pages/AdminDashboard'
 import SearchPage from './pages/SearchPage'
 import TimetablePage from './pages/TimetablePage'
-import TeacherDashboardPage from './pages/TeacherDashboardPage'
+import TeacherHomePage from './pages/giaovien/TeacherHomePage'
 import './App.css'
 
 const authPages = ['login']
@@ -107,7 +107,12 @@ function App() {
         {page.startsWith('admin-') && <AdminDashboard page={page} onNavigate={changePage} />}
         
         {/* TRANG DÀNH RIÊNG CHO GIÁO VIÊN */}
-        {page === 'teacher-dashboard' && <TeacherDashboardPage />}
+        {page === 'teacher-dashboard' && (
+          <TeacherHomePage 
+            teacherId={user?.TaiKhoanID || user?.id || 3} 
+            onLogout={handleLogout} 
+          />
+        )}
       </main>
 
       {!isAuthPage && <Footer />}

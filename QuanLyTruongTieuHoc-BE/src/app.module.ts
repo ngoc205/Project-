@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module'; 
 import { MonHocModule } from './mon-hoc/mon-hoc.module';
+import { GiaovienModule } from './giaovien/giaovien.module';
 
 
 @Module({
@@ -11,7 +12,7 @@ import { MonHocModule } from './mon-hoc/mon-hoc.module';
   host: 'localhost',
   port: 1433,
   username: 'sa',
-  password: '123456Aa@', 
+  password: '123', 
   database: 'PriSchool',
   entities: [__dirname + '/**/*.entity{.ts,.js}'],
   synchronize: false,
@@ -22,6 +23,7 @@ import { MonHocModule } from './mon-hoc/mon-hoc.module';
 }),
     AuthModule,
     MonHocModule,
+    GiaovienModule,
   ],
 })
 export class AppModule {}
