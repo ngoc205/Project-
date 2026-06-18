@@ -20,7 +20,7 @@ export class TaiKhoanService {
         IsActive: true,
         NgayTao: true,
         NgayCapNhat: true,
-      }
+      },
     });
   }
 
@@ -32,7 +32,7 @@ export class TaiKhoanService {
   async update(id: number, data: Partial<TaiKhoan>) {
     const acc = await this.taiKhoanRepo.findOne({ where: { TaiKhoanID: id } });
     if (!acc) throw new NotFoundException('Không tìm thấy tài khoản!');
-    
+
     await this.taiKhoanRepo.update(id, data);
     return this.taiKhoanRepo.findOne({ where: { TaiKhoanID: id } });
   }

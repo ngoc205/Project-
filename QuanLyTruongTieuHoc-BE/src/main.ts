@@ -4,7 +4,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Dòng "chìa khóa" bắt buộc phải nằm ở đây:
   app.enableCors({
     origin: '*', // Cho phép mọi nguồn truy cập (hoặc bạn có thể chỉ định 'http://localhost:5173')
@@ -14,4 +14,4 @@ async function bootstrap() {
 
   await app.listen(3000);
 }
-bootstrap();
+void bootstrap();

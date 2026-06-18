@@ -2,6 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
+interface JwtPayload {
+  sub: number;
+  username: string;
+  role: string;
+}
+
+export interface AuthenticatedUser {
+  TaiKhoanID: number;
+  TenDangNhap: string;
+  VaiTro: string;
+}
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
@@ -12,12 +24,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any) {
+  validate(payload: JwtPayload): AuthenticatedUser {
     // Sửa lại đoạn return này để RolesGuard có thể đọc được user.VaiTro
-    return { 
-      TaiKhoanID: payload.sub, 
-      TenDangNhap: payload.username, 
-      VaiTro: payload.role // Đã đổi 'role' thành 'VaiTro'
+    return {
+      TaiKhoanID: payload.sub,
+      TenDangNhap: payload.username,
+      VaiTro: payload.role, // Đã đổi 'role' thành 'VaiTro'
     };
   }
 }

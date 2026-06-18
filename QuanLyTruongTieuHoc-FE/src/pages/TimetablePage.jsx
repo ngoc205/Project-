@@ -1,90 +1,166 @@
-import { afternoonRows, morningRows, subjects } from '../data/schoolData'
+import { useEffect, useMemo, useState } from 'react';
+import api from '../api/axiosClient';
 
-function Subject({ id }) {
-  return <span className={`subject ${id}`}>{subjects[id]}</span>
+function cellKey(thuId, tietHocId) {
+  return `${thuId}-${tietHocId}`;
 }
 
-function TimetableTable() {
-  return (
-    <div className="timetable">
-      <div className="table-row table-head">
-        <span>Buổi</span>
-        <span>Tiết</span>
-        <span>Thứ Hai</span>
-        <span>Thứ Ba</span>
-        <span>Thứ Tư</span>
-        <span>Thứ Năm</span>
-        <span>Thứ Sáu</span>
-      </div>
-      {morningRows.map((row, index) => (
-        <div className="table-row" key={`morning-${index}`}>
-          {index === 0 && <span className="session" style={{ gridRow: `span ${morningRows.length}` }}>SÁNG<br />(7:30 - 11:00)</span>}
-          <span>{index + 1}</span>
-          {row.map((key, cellIndex) => <Subject key={`${key}-${cellIndex}`} id={key} />)}
-        </div>
-      ))}
-      <div className="lunch">Nghỉ trưa và Bán trú tại trường (11:00 - 13:45)</div>
-      {afternoonRows.map((row, index) => (
-        <div className="table-row" key={`afternoon-${index}`}>
-          {index === 0 && <span className="session" style={{ gridRow: `span ${afternoonRows.length}` }}>CHIỀU<br />(14:00 - 16:30)</span>}
-          <span>{index + 1}</span>
-          {row.map((key, cellIndex) => (key ? <Subject key={`${key}-${cellIndex}`} id={key} /> : <span className="empty-cell" key={cellIndex}>-</span>))}
-        </div>
-      ))}
-    </div>
-  )
+function buildGrid(entries = []) {
+  const grid = {};
+  entries.forEach((entry) => {
+    grid[cellKey(entry.ThuID, entry.TietHocID)] = entry;
+  });
+  return grid;
 }
 
 function TimetablePage() {
+  const [options, setOptions] = useState({ khoi: [], lop: [], thu: [], tietHoc: [], monHoc: [] });
+  const [selectedKhoiId, setSelectedKhoiId] = useState('');
+  const [selectedLopId, setSelectedLopId] = useState('');
+  const [classInfo, setClassInfo] = useState(null);
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const filteredClasses = useMemo(() => {
+    if (!selectedKhoiId) return [];
+    return options.lop.filter((lop) => Number(lop.KhoiID) === Number(selectedKhoiId));
+  }, [options.lop, selectedKhoiId]);
+
+  const grid = useMemo(() => buildGrid(entries), [entries]);
+
+  useEffect(() => {
+    api.get('/thoi-khoa-bieu/options')
+      .then((res) => {
+        setOptions(res.data);
+        const firstKhoi = res.data.khoi?.[0]?.KhoiID || '';
+        const firstClass = res.data.lop?.find((lop) => Number(lop.KhoiID) === Number(firstKhoi));
+        setSelectedKhoiId(firstKhoi);
+        setSelectedLopId(firstClass?.LopID || '');
+      })
+      .catch((err) => {
+        console.error('Lỗi tải bộ lọc thời khóa biểu', err);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!selectedLopId) {
+      setClassInfo(null);
+      setEntries([]);
+      return;
+    }
+
+    setLoading(true);
+    api.get(`/thoi-khoa-bieu?lopId=${selectedLopId}`)
+      .then((res) => {
+        setClassInfo(res.data.lop);
+        setEntries(res.data.entries || []);
+      })
+      .catch((err) => {
+        console.error('Lỗi tải thời khóa biểu', err);
+        setClassInfo(null);
+        setEntries([]);
+      })
+      .finally(() => setLoading(false));
+  }, [selectedLopId]);
+
+  const handleKhoiChange = (value) => {
+    setSelectedKhoiId(value);
+    const firstClass = options.lop.find((lop) => Number(lop.KhoiID) === Number(value));
+    setSelectedLopId(firstClass?.LopID || '');
+  };
+
   return (
     <>
-      <section className="section page-center">
-        <h1>🗓 Thời Khóa Biểu Cấp Trường</h1>
-        <p>Phụ huynh vui lòng chọn Khối và Lớp để xem lịch học chi tiết của các con.</p>
-        <div className="filter-panel">
+      <section className="section page-center viewer-filter-section">
+        <h1>Thời Khóa Biểu</h1>
+        <p>Phụ huynh chọn khối và lớp để xem lịch học đã được cập nhật từ hệ thống quản trị.</p>
+
+        <div className="filter-panel viewer-filter-panel">
           <label>
             Khối học
-            <select defaultValue="Khối 1">
-              <option>Khối 1</option>
-              <option>Khối 2</option>
-              <option>Khối 3</option>
-              <option>Khối 4</option>
-              <option>Khối 5</option>
+            <select value={selectedKhoiId} onChange={(e) => handleKhoiChange(e.target.value)}>
+              <option value="">Chọn khối</option>
+              {options.khoi.map((khoi) => (
+                <option key={khoi.KhoiID} value={khoi.KhoiID}>{khoi.TenKhoi}</option>
+              ))}
             </select>
           </label>
+
           <label>
             Lớp học
-            <select defaultValue="Lớp 1A1">
-              <option>Lớp 1A1</option>
-              <option>Lớp 1A2</option>
-              <option>Lớp 2A1</option>
+            <select value={selectedLopId} onChange={(e) => setSelectedLopId(e.target.value)}>
+              <option value="">Chọn lớp</option>
+              {filteredClasses.map((lop) => (
+                <option key={lop.LopID} value={lop.LopID}>{lop.TenLop}</option>
+              ))}
             </select>
           </label>
-          <label>
-            Tuần học
-            <select defaultValue="Tuần 1 (01/09 - 05/09)">
-              <option>Tuần 1 (01/09 - 05/09)</option>
-              <option>Tuần 2 (08/09 - 12/09)</option>
-            </select>
-          </label>
-          <button className="primary-button" type="button">Xem lịch học</button>
         </div>
       </section>
 
-      <section className="timetable-wrap">
+      <section className="viewer-timetable-wrap">
         <div className="container">
-          <div className="timetable-card">
-            <div className="table-heading">
-              <h2>Lớp 1A1 - Giáo viên Chủ nhiệm: Cô Trần Thị B</h2>
-              <button className="primary-button small" type="button">In thời khóa biểu</button>
+          <div className="viewer-timetable-card">
+            <div className="viewer-table-heading">
+              <div>
+                <h2>{classInfo ? `Thời khóa biểu lớp ${classInfo.TenLop}` : 'Chưa chọn lớp'}</h2>
+                {classInfo && (
+                  <p style={{ color: '#64748b', marginTop: '6px' }}>
+                    {classInfo.TenKhoi} - Giáo viên chủ nhiệm: {classInfo.TenGiaoVien || 'Chưa phân công'}
+                  </p>
+                )}
+              </div>
+              <button className="primary-button small" type="button" onClick={() => window.print()}>
+                In thời khóa biểu
+              </button>
             </div>
-            <TimetableTable />
-            <p className="note">Lưu ý: Phụ huynh vui lòng đón con đúng giờ. Học sinh tham gia CLB ngoại khóa vào chiều Thứ Sáu sẽ tan học lúc 17:00.</p>
+
+            {loading ? (
+              <div className="viewer-loading">Đang tải thời khóa biểu...</div>
+            ) : (
+              <div className="viewer-timetable-shell">
+                <table className="viewer-timetable">
+                  <thead>
+                    <tr>
+                      <th>Tiết</th>
+                      {options.thu.map((thu) => (
+                        <th key={thu.ThuID}>{thu.TenThu}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {options.tietHoc.map((tiet) => (
+                      <tr key={tiet.TietHocID}>
+                        <td className="viewer-period">{tiet.TenTiet}</td>
+                        {options.thu.map((thu, index) => {
+                          const entry = grid[cellKey(thu.ThuID, tiet.TietHocID)];
+                          return (
+                            <td key={thu.ThuID}>
+                              {entry?.TenMonHoc ? (
+                                <div className={`viewer-subject viewer-subject-${['blue', 'pink', 'mint', 'yellow', 'lavender', 'teal', 'slate'][index % 7]}`}>
+                                  {entry.TenMonHoc}
+                                </div>
+                              ) : (
+                                <div className="viewer-empty">-</div>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {!loading && classInfo && entries.length === 0 && (
+              <p className="viewer-note">Lớp này chưa có thời khóa biểu. Vui lòng quay lại sau khi nhà trường cập nhật.</p>
+            )}
           </div>
         </div>
       </section>
     </>
-  )
+  );
 }
 
-export default TimetablePage
+export default TimetablePage;

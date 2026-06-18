@@ -1,6 +1,17 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { Request } from 'express';
+import { AuthenticatedUser } from './jwt.strategy';
 import { ROLES_KEY } from './roles.decorator';
+
+interface AuthenticatedRequest extends Request {
+  user?: AuthenticatedUser;
+}
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -8,10 +19,10 @@ export class RolesGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     // 1. Lấy danh sách các quyền được phép truy cập API này
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(
+      ROLES_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
     // Nếu API không gắn nhãn @Roles, cho phép đi qua
     if (!requiredRoles) {
@@ -19,13 +30,15 @@ export class RolesGuard implements CanActivate {
     }
 
     // 2. Lấy thông tin user từ request (đã được JwtStrategy giải mã trước đó)
-    const { user } = context.switchToHttp().getRequest();
+    const { user } = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
     // 3. Kiểm tra xem user có tồn tại và VaiTro có nằm trong danh sách cho phép không
     const hasRole = user && requiredRoles.includes(user.VaiTro);
 
     if (!hasRole) {
-      throw new ForbiddenException('Bạn không có quyền thực hiện hành động này!');
+      throw new ForbiddenException(
+        'Bạn không có quyền thực hiện hành động này!',
+      );
     }
 
     return true;

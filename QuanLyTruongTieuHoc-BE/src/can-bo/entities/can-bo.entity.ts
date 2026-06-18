@@ -1,25 +1,68 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('CanBo')
 export class CanBo {
-  @PrimaryGeneratedColumn()
-  MaCanBo: number;
+  @PrimaryGeneratedColumn({ name: 'CanBoID' })
+  CanBoID: number;
 
-  @Column()
+  @Column({
+    name: 'TaiKhoanID',
+    nullable: true,
+  })
+  TaiKhoanID: number;
+
+  @Column({
+    name: 'HoTen',
+    type: 'nvarchar',
+    length: 100,
+  })
   HoTen: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({
+    name: 'NgaySinh',
+    type: 'date',
+    nullable: true,
+  })
   NgaySinh: Date;
 
-  @Column({ nullable: true })
-  GioiTinh: string;
-
-  @Column({ nullable: true })
+  @Column({
+    name: 'SoDienThoai',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
   SoDienThoai: string;
 
-  @Column({ nullable: true })
-  Email: string;
-
-  @Column({ nullable: true })
+  @Column({
+    name: 'ChucVu',
+    type: 'nvarchar',
+    length: 100,
+    nullable: true,
+  })
   ChucVu: string;
+
+  @Column({
+    name: 'IsActive',
+    type: 'bit',
+    default: true,
+  })
+  IsActive: boolean;
+
+  @CreateDateColumn({
+    name: 'NgayTao',
+    type: 'datetime',
+  })
+  NgayTao: Date;
+
+  @UpdateDateColumn({
+    name: 'NgayCapNhat',
+    type: 'datetime',
+  })
+  NgayCapNhat: Date;
 }

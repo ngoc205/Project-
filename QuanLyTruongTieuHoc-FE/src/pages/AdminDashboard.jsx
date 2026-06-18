@@ -1,9 +1,12 @@
-import React from 'react';
 import AdminMonHocPage from './AdminMonHocPage';
 import AdminTaiKhoanPage from './AdminTaiKhoanPage';
+import AdminGiaoVienPage from './AdminGiaoVienPage';
+import AdminCanBoPage from './AdminCanBoPage';
+import AdminHocSinhPage from './AdminHocSinhPage';
+import AdminLopHocPage from './AdminLopHocPage';
+import AdminThoiKhoaBieuPage from './AdminThoiKhoaBieuPage';
 
 export default function AdminDashboard({ page, onNavigate }) {
-  // Danh sách các menu dựa trên cấu trúc Database SQL
   const menuItems = [
     { id: 'admin-taikhoan', label: '👤 Quản lý Tài khoản' },
     { id: 'admin-canbo', label: '👔 Quản lý Cán bộ' },
@@ -15,16 +18,24 @@ export default function AdminDashboard({ page, onNavigate }) {
     { id: 'admin-thoikhoabieu', label: '📅 Quản lý Thời khóa biểu' },
   ];
 
+  const developedPages = [
+    'admin-monhoc',
+    'admin-taikhoan',
+    'admin-canbo',
+    'admin-giaovien',
+    'admin-hocsinh',
+    'admin-lophoc',
+    'admin-thoikhoabieu',
+  ];
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
-      
-      {/* SIDEBAR - CỘT MENU BÊN TRÁI */}
-      <div style={{ width: '260px', backgroundColor: '#1a365d', color: 'white', padding: '20px 0' }}>
-        <h3 style={{ textAlign: 'center', marginBottom: '30px', borderBottom: '1px solid #2b6cb0', paddingBottom: '15px' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', backgroundColor: '#f0f2f5' }}>
+      <div style={{ flex: '0 0 280px', width: '280px', backgroundColor: '#1a365d', color: 'white', padding: '20px 0' }}>
+        <h3 style={{ textAlign: 'center', marginBottom: '24px', borderBottom: '1px solid #2b6cb0', padding: '0 18px 15px', lineHeight: 1.35, whiteSpace: 'normal' }}>
           HỆ THỐNG ĐIỀU HÀNH
         </h3>
         <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-          {menuItems.map(item => (
+          {menuItems.map((item) => (
             <li key={item.id}>
               <button
                 onClick={() => onNavigate(item.id)}
@@ -37,10 +48,15 @@ export default function AdminDashboard({ page, onNavigate }) {
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: '16px',
-                  transition: '0.3s'
+                  lineHeight: 1.35,
+                  transition: '0.3s',
                 }}
-                onMouseOver={(e) => { if(page !== item.id) e.target.style.backgroundColor = '#2c5282' }}
-                onMouseOut={(e) => { if(page !== item.id) e.target.style.backgroundColor = 'transparent' }}
+                onMouseOver={(e) => {
+                  if (page !== item.id) e.target.style.backgroundColor = '#2c5282';
+                }}
+                onMouseOut={(e) => {
+                  if (page !== item.id) e.target.style.backgroundColor = 'transparent';
+                }}
               >
                 {item.label}
               </button>
@@ -49,18 +65,19 @@ export default function AdminDashboard({ page, onNavigate }) {
         </ul>
       </div>
 
-      {/* CONTENT - NỘI DUNG HIỂN THỊ BÊN PHẢI */}
       <div style={{ flex: 1, padding: '30px', backgroundColor: 'white', margin: '20px', borderRadius: '10px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-        
-        {/* Điều hướng render Component con */}
         {page === 'admin-monhoc' && <AdminMonHocPage />}
         {page === 'admin-taikhoan' && <AdminTaiKhoanPage />}
-        
-        {/* Các trang chưa làm sẽ hiển thị tạm dòng này */}
-        {page !== 'admin-monhoc' && page !== 'admin-taikhoan' && (
+        {page === 'admin-canbo' && <AdminCanBoPage />}
+        {page === 'admin-giaovien' && <AdminGiaoVienPage />}
+        {page === 'admin-hocsinh' && <AdminHocSinhPage />}
+        {page === 'admin-lophoc' && <AdminLopHocPage />}
+        {page === 'admin-thoikhoabieu' && <AdminThoiKhoaBieuPage />}
+
+        {!developedPages.includes(page) && (
           <div style={{ textAlign: 'center', marginTop: '50px', color: '#718096' }}>
             <h2>Tính năng đang được phát triển...</h2>
-            <p>Vui lòng chọn "Quản lý Tài khoản" hoặc "Quản lý Môn học" để trải nghiệm.</p>
+            <p>Vui lòng chọn chức năng đã có trong menu để trải nghiệm.</p>
           </div>
         )}
       </div>

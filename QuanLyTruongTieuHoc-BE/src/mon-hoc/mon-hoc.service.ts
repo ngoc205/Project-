@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MonHoc } from './mon-hoc.entity';
@@ -28,8 +32,8 @@ export class MonHocService {
   }
 
   async findOne(id: number): Promise<MonHoc> {
-    const monHoc = await this.monHocRepository.findOne({ 
-      where: { MonHocID: id } 
+    const monHoc = await this.monHocRepository.findOne({
+      where: { MonHocID: id },
     });
     if (!monHoc) {
       throw new NotFoundException(`Không tồn tại môn học nào với ID: ${id}`);
@@ -40,10 +44,12 @@ export class MonHocService {
   async update(id: number, data: Partial<MonHoc>): Promise<MonHoc> {
     // Kiểm tra môn học tồn tại trước khi cập nhật
     await this.findOne(id);
-    
+
     // Ngăn chặn việc gửi chuỗi rỗng lên cho các trường NOT NULL
     if (data.TenMonHoc === '') {
-      throw new BadRequestException('Tên môn học không được phép là chuỗi rỗng!');
+      throw new BadRequestException(
+        'Tên môn học không được phép là chuỗi rỗng!',
+      );
     }
 
     await this.monHocRepository.update(id, data);

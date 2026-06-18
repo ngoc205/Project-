@@ -61,6 +61,26 @@ function Header({
               {item.label}
             </button>
           ))}
+
+          {user?.VaiTro === 'GiaoVien' && (
+            <button
+              className={activePage === 'teacher-dashboard' ? 'active' : ''}
+              type="button"
+              onClick={() => onNavigate('teacher-dashboard')}
+            >
+              Trang GV
+            </button>
+          )}
+
+          {user?.VaiTro === 'CanBo' && (
+            <button
+              className={activePage.startsWith('admin-') ? 'active' : ''}
+              type="button"
+              onClick={() => onNavigate('admin-monhoc')}
+            >
+              Quản trị
+            </button>
+          )}
         </nav>
 
         {user ? (

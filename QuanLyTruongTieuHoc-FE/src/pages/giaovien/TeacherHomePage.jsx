@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api/axiosClient';
 import './TeacherHomePage.css';
 
 const TeacherHomePage = ({ teacherId, onLogout }) => {
@@ -12,8 +12,8 @@ const TeacherHomePage = ({ teacherId, onLogout }) => {
     const fetchTeacherData = async () => {
       try {
         const [lichDayResponse, lopChuNhiemResponse] = await Promise.all([
-          axios.get(`http://localhost:3000/api/giaovien/${teacherId}/lich-day`),
-          axios.get(`http://localhost:3000/api/giaovien/${teacherId}/lop-chu-nhiem`)
+          api.get(`/api/giaovien/${teacherId}/lich-day`),
+          api.get(`/api/giaovien/${teacherId}/lop-chu-nhiem`)
         ]);
 
         // Cập nhật state với dữ liệu mảng
