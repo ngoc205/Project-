@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import AuthLayout, { AuthField } from '../components/AuthLayout';
 import api from '../api/axiosClient';
+import Swal from 'sweetalert2';
 
 export default function LoginPage({ onNavigate }) {
   const [formData, setFormData] = useState({ 
@@ -25,7 +26,13 @@ export default function LoginPage({ onNavigate }) {
         VaiTro: userInfo.VaiTro
       }));
 
-      alert("Đăng nhập thành công!");
+      // --- SỬA PHẦN NÀY: Thay alert thành SweetAlert2 khi đăng nhập thành công ---
+      Swal.fire({
+        icon: 'success',
+        title: 'Đăng nhập thành công!',
+        showConfirmButton: false,
+        timer: 1500
+      });
       
       // Rẽ nhánh điều hướng dựa vào VaiTro
       if (userInfo.VaiTro === 'CanBo') {
@@ -38,7 +45,15 @@ export default function LoginPage({ onNavigate }) {
 
     } catch (err) {
       console.error("Lỗi đăng nhập:", err);
-      alert("Đăng nhập thất bại! Sai tên đăng nhập hoặc mật khẩu.");
+      
+      // --- SỬA PHẦN NÀY: Thay alert thành SweetAlert2 khi đăng nhập thất bại ---
+      Swal.fire({
+        icon: 'error',
+        title: 'Đăng nhập thất bại',
+        text: 'Sai tên đăng nhập hoặc mật khẩu. Vui lòng kiểm tra lại!',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'Thử lại'
+      });
     }
   };
 
