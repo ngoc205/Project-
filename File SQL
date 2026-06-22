@@ -50,10 +50,11 @@ CREATE TABLE HocSinh (
     GioiTinh NVARCHAR(10) NOT NULL CHECK (GioiTinh IN (N'Nam', N'Nữ')),
     DiaChi NVARCHAR(200) NULL,
     AnhDaiDien VARCHAR(255) NULL,
+    LopID INT NULL, -- Trường mới thêm ở đây
     IsActive BIT DEFAULT 1,
     NgayTao DATETIME DEFAULT GETDATE()
 );
-
+DROP TABLE HocSinh;
 -- 5. Bảng Khoi
 CREATE TABLE Khoi (
     KhoiID INT IDENTITY(1,1) PRIMARY KEY,
@@ -258,4 +259,8 @@ INSERT INTO ThoiKhoaBieu (ThoiKhoaBieuID, LopID, ThuID, TietHocID, MonHocID, Gia
 (6, 2, 3, 1, 5, 2, N'TN&XH - Sân trường');
 SET IDENTITY_INSERT ThoiKhoaBieu OFF;
 GO
+
+
+SELECT * FROM TaiKhoan
+SELECT * FROM CanBo
 
