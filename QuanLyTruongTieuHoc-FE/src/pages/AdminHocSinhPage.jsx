@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import api from '../api/axiosClient'
+import Swal from 'sweetalert2'
 
 export default function AdminHocSinhPage() {
   const [list, setList] = useState([])
@@ -48,17 +49,76 @@ export default function AdminHocSinhPage() {
   }
 
   const handleSubmit = async () => {
+  if (!form.TenHocSinh.trim()) {
+    Swal.fire({
+      title: 'Thiếu dữ liệu',
+      text: 'Vui lòng nhập tên học sinh',
+      icon: 'warning',
+    })
+    return
+  }
+
+  if (!form.NgaySinh) {
+    Swal.fire({
+      title: 'Thiếu dữ liệu',
+      text: 'Vui lòng chọn ngày sinh',
+      icon: 'warning',
+    })
+    return
+  }
+
+  if (!form.GioiTinh) {
+    Swal.fire({
+      title: 'Thiếu dữ liệu',
+      text: 'Vui lòng chọn giới tính',
+      icon: 'warning',
+    })
+    return
+  }
+
+  try {
+    const result = await Swal.fire({
+      title: editId ? 'Cập nhật học sinh?' : 'Thêm học sinh?',
+      text: editId
+        ? 'Xác nhận cập nhật thông tin học sinh'
+        : 'Xác nhận thêm học sinh mới',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Đồng ý',
+      cancelButtonText: 'Hủy',
+    })
+
+    if (!result.isConfirmed) return
+
     if (editId) {
       await api.patch(`/hoc-sinh/${editId}`, form)
       setEditId(null)
+
+      await Swal.fire({
+        title: 'Thành công',
+        text: 'Cập nhật học sinh thành công',
+        icon: 'success',
+      })
     } else {
       await api.post('/hoc-sinh', form)
+
+      await Swal.fire({
+        title: 'Thành công',
+        text: 'Thêm học sinh thành công',
+        icon: 'success',
+      })
     }
 
     resetForm()
-
     loadData()
+  } catch (err) {
+    Swal.fire({
+      title: 'Lỗi',
+      text: err?.response?.data?.message || 'Có lỗi xảy ra',
+      icon: 'error',
+    })
   }
+}
 
   const uploadImageFile = async (file) => {
     if (!file) return
@@ -87,11 +147,36 @@ export default function AdminHocSinhPage() {
       AnhDaiDien: item.AnhDaiDien || '',
     })
   }
+const handleDelete = async (id) => {
+  const result = await Swal.fire({
+    title: 'Xác nhận xóa',
+    text: 'Bạn có chắc chắn muốn xóa học sinh này?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Xóa',
+    cancelButtonText: 'Hủy',
+  })
 
-  const handleDelete = async (id) => {
+  if (!result.isConfirmed) return
+
+  try {
     await api.delete(`/hoc-sinh/${id}`)
+
+    await Swal.fire({
+      title: 'Thành công',
+      text: 'Đã xóa học sinh',
+      icon: 'success',
+    })
+
     loadData()
+  } catch (err) {
+    Swal.fire({
+      title: 'Lỗi',
+      text: 'Xóa học sinh thất bại',
+      icon: 'error',
+    })
   }
+}
 
   return (
     <div style={{ padding: 30, background: '#f4f6fb', minHeight: '100vh' }}>
