@@ -31,12 +31,20 @@ export class HocSinhService {
   }
 
   // ⭐ THÊM: SEARCH
-  search(keyword: string) {
-    return this.hocSinhRepository.find({
-      where: {
-        TenHocSinh: Like(`%${keyword}%`),
-      },
-    });
+  search(keyword = '') {
+    const normalizedKeyword = keyword.trim();
+    if (!normalizedKeyword) return this.findAll();
+
+    return this.hocSinhRepository
+      .createQueryBuilder('hs')
+      .where('hs.TenHocSinh LIKE :keyword', {
+        keyword: `%${normalizedKeyword}%`,
+      })
+      .orWhere('CAST(hs.HocSinhID AS varchar) LIKE :keyword', {
+        keyword: `%${normalizedKeyword}%`,
+      })
+      .orderBy('hs.HocSinhID', 'DESC')
+      .getMany();
   }
 
   // UPDATE (GIỮ NGUYÊN)

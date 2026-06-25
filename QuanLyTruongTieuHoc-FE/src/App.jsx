@@ -11,6 +11,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import SearchPage from './pages/SearchPage'
 import TimetablePage from './pages/TimetablePage'
 import TeacherHomePage from './pages/giaovien/TeacherHomePage'
+import { NotificationProvider, useNotification } from './components/NotificationProvider'
 import './App.css'
 
 const authPages = ['login']
@@ -21,7 +22,8 @@ const getSavedUser = () => {
   return savedUser ? JSON.parse(savedUser) : null
 }
 
-function App() {
+function AppContent() {
+  const { showError } = useNotification()
   const [page, setPage] = useState('home')
   const [menuOpen, setMenuOpen] = useState(false)
   const [user, setUser] = useState(getSavedUser)
@@ -34,14 +36,14 @@ function App() {
 
     if (nextPage.startsWith('admin-')) {
       if (!currentUser || currentUser.VaiTro !== 'CanBo') {
-        alert('TRUY CẬP BỊ TỪ CHỐI: Khu vực này chỉ dành riêng cho Cán bộ điều hành!')
+        showError('Truy cập bị từ chối: khu vực này chỉ dành cho cán bộ điều hành!')
         return
       }
     }
 
     if (nextPage.startsWith('teacher-')) {
       if (!currentUser || currentUser.VaiTro !== 'GiaoVien') {
-        alert('TRUY CẬP BỊ TỪ CHỐI: Khu vực này chỉ dành cho Giáo viên!')
+        showError('Truy cập bị từ chối: khu vực này chỉ dành cho giáo viên!')
         return
       }
     }
@@ -98,6 +100,10 @@ function App() {
       {!isAuthPage && <Footer />}
     </div>
   )
+}
+
+function App() {
+  return <NotificationProvider><AppContent /></NotificationProvider>
 }
 
 export default App

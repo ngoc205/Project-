@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axiosClient';
+import { useNotification } from '../components/NotificationProvider';
+import AdminLenLopPage from './AdminLenLopPage';
 
 const emptyForm = {
   TenLop: '',
@@ -59,6 +61,7 @@ function formatDate(dateValue) {
 }
 
 export default function AdminLopHocPage() {
+  const { showError, showSuccess } = useNotification();
   const [classes, setClasses] = useState([]);
   const [options, setOptions] = useState({ khoi: [], giaoVien: [], hocSinh: [], canAssignStudents: false });
   const [form, setForm] = useState(emptyForm);
@@ -67,6 +70,8 @@ export default function AdminLopHocPage() {
   const [studentSearch, setStudentSearch] = useState('');
   const [teacherSearch, setTeacherSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingList, setLoadingList] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
   const allStudents = useMemo(() => {
     const map = new Map();
@@ -93,24 +98,44 @@ export default function AdminLopHocPage() {
   const filteredTeachers = useMemo(() => {
     const keyword = teacherSearch.trim().toLowerCase();
     if (!keyword) return [];
+
+    // A teacher can only be the homeroom teacher of one class.  Keep the
+    // current class's teacher selectable while editing that same class.
+    const assignedTeacherIds = new Set(
+      classes
+        .filter((lop) => Number(lop.LopID) !== Number(selectedClass?.LopID))
+        .map((lop) => Number(lop.GiaoVienID))
+        .filter(Boolean),
+    );
+
     return options.giaoVien
+      .filter((teacher) => !assignedTeacherIds.has(Number(teacher.GiaoVienID)))
       .filter((teacher) => `${teacher.GiaoVienID} ${teacher.HoTen} ${teacher.SoDienThoai || ''}`.toLowerCase().includes(keyword))
       .slice(0, 8);
-  }, [teacherSearch, options.giaoVien]);
+  }, [teacherSearch, options.giaoVien, classes, selectedClass]);
 
   const loadData = async () => {
-    const [classRes, optionRes] = await Promise.all([
-      api.get('/lop-hoc'),
-      api.get('/lop-hoc/options'),
-    ]);
-    setClasses(classRes.data);
-    setOptions(optionRes.data);
+    setLoadingList(true);
+    setLoadError('');
+    try {
+      const [classRes, optionRes] = await Promise.all([
+        api.get('/lop-hoc'),
+        api.get('/lop-hoc/options'),
+      ]);
+      setClasses(classRes.data);
+      setOptions(optionRes.data);
+    } catch (err) {
+      console.error('Lỗi tải dữ liệu lớp học', err);
+      setLoadError(err.response?.data?.message || 'Không tải được dữ liệu lớp học.');
+      throw err;
+    } finally {
+      setLoadingList(false);
+    }
   };
 
   useEffect(() => {
     loadData().catch((err) => {
-      console.error('Lỗi tải dữ liệu lớp học', err);
-      alert('Không tải được dữ liệu lớp học. Kiểm tra backend /lop-hoc.');
+      showError('Không tải được dữ liệu lớp học. Kiểm tra backend /lop-hoc.');
     });
   }, []);
 
@@ -143,7 +168,7 @@ export default function AdminLopHocPage() {
       setScreen('detail');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      alert(err.response?.data?.message || 'Không xem được chi tiết lớp!');
+      showError(err.response?.data?.message || 'Không xem được chi tiết lớp!');
     }
   };
 
@@ -172,9 +197,9 @@ export default function AdminLopHocPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const tenLop = form.TenLop.trim();
-    if (!tenLop) return alert('Vui lòng nhập tên lớp!');
-    if (!form.KhoiID) return alert('Vui lòng chọn khối học!');
-    if (!form.GiaoVienID) return alert('Vui lòng chọn giáo viên từ danh sách gợi ý!');
+    if (!tenLop) return showError('Vui lòng nhập tên lớp!');
+    if (!form.KhoiID) return showError('Vui lòng chọn khối học!');
+    if (!form.GiaoVienID) return showError('Vui lòng chọn giáo viên từ danh sách gợi ý!');
 
     setLoading(true);
     try {
@@ -189,12 +214,12 @@ export default function AdminLopHocPage() {
         ? await api.put(`/lop-hoc/${selectedClass.LopID}`, payload)
         : await api.post('/lop-hoc', payload);
 
-      alert(selectedClass ? 'Cập nhật lớp thành công!' : 'Tạo lớp thành công!');
+      showSuccess(selectedClass ? 'Cập nhật lớp thành công!' : 'Tạo lớp thành công!');
       await loadData();
       setSelectedClass(res.data);
       setScreen('detail');
     } catch (err) {
-      alert(err.response?.data?.message || 'Có lỗi xảy ra khi lưu lớp học!');
+      showError(err.response?.data?.message || 'Có lỗi xảy ra khi lưu lớp học!');
     } finally {
       setLoading(false);
     }
@@ -206,12 +231,12 @@ export default function AdminLopHocPage() {
 
     try {
       await api.delete(`/lop-hoc/${selectedClass.LopID}`);
-      alert('Xóa lớp thành công!');
+      showSuccess('Xóa lớp thành công!');
       setSelectedClass(null);
       setScreen('list');
       await loadData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Không xóa được lớp học!');
+      showError(err.response?.data?.message || 'Không xóa được lớp học!');
     }
   };
 
@@ -223,10 +248,15 @@ export default function AdminLopHocPage() {
       </div>
       <div style={{ display: 'flex', gap: '10px' }}>
         {screen !== 'list' && <button type="button" onClick={() => setScreen('list')} style={buttonGhost}>Danh sách lớp</button>}
+        {screen === 'list' && <button type="button" onClick={() => setScreen('promotion')} style={{ ...buttonGhost, borderColor: '#7c3aed', color: '#6d28d9' }}>Lên lớp</button>}
         <button type="button" onClick={startCreate} style={buttonPrimary}>Tạo lớp mới</button>
       </div>
     </div>
   );
+
+  if (screen === 'promotion') {
+    return <AdminLenLopPage onBack={() => setScreen('list')} onCompleted={async () => { await loadData(); setScreen('list'); }} />;
+  }
 
   if (screen === 'detail' && selectedClass) {
     return (
@@ -446,8 +476,15 @@ export default function AdminLopHocPage() {
       <section style={{ border: '1px solid #dbe3ef', borderRadius: '10px', overflow: 'hidden', background: 'white' }}>
         <div style={{ padding: '16px 18px', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0, color: '#1a365d' }}>Danh sách lớp</h3>
-          <span style={{ color: '#64748b' }}>{classes.length} lớp</span>
+          <button type="button" onClick={() => loadData().catch(() => {})} style={buttonGhost}>
+            Tải lại danh sách
+          </button>
         </div>
+        {loadError && (
+          <div style={{ padding: '12px 18px', color: '#b91c1c', background: '#fee2e2', borderBottom: '1px solid #fecaca', fontWeight: 700 }}>
+            {loadError}
+          </div>
+        )}
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -459,7 +496,14 @@ export default function AdminLopHocPage() {
             </tr>
           </thead>
           <tbody>
-            {classes.map((lop) => (
+            {loadingList && (
+              <tr>
+                <td style={{ ...tdStyle, color: '#64748b', textAlign: 'center' }} colSpan="5">
+                  Đang tải danh sách lớp từ database...
+                </td>
+              </tr>
+            )}
+            {!loadingList && classes.map((lop) => (
               <tr key={lop.LopID}>
                 <td style={tdStyle}><strong>{lop.TenLop}</strong></td>
                 <td style={tdStyle}>{lop.TenKhoi || lop.KhoiID}</td>
@@ -472,7 +516,13 @@ export default function AdminLopHocPage() {
                 </td>
               </tr>
             ))}
-            {classes.length === 0 && <tr><td style={tdStyle} colSpan="5">Chưa có lớp nào.</td></tr>}
+            {!loadingList && classes.length === 0 && (
+              <tr>
+                <td style={tdStyle} colSpan="5">
+                  Chưa có lớp nào. Bấm “Tải lại danh sách” để lấy dữ liệu mới nhất từ database.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </section>

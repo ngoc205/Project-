@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import api from '../api/axiosClient'
+import { useNotification } from '../components/NotificationProvider'
 
 export default function AdminHocSinhPage() {
+  const { showError } = useNotification()
   const [list, setList] = useState([])
   const [editId, setEditId] = useState(null)
   const [search, setSearch] = useState('')
@@ -71,7 +73,7 @@ export default function AdminHocSinhPage() {
       const res = await api.post('/upload/image', formData)
       setForm((current) => ({ ...current, AnhDaiDien: res.data.filename }))
     } catch (err) {
-      alert(err.response?.data?.message || 'Upload ảnh thất bại!')
+      showError(err.response?.data?.message || 'Upload ảnh thất bại!')
     } finally {
       setUploadingImage(false)
     }

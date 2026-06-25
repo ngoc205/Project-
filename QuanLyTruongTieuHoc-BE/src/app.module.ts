@@ -8,6 +8,7 @@ import { GiaovienModule } from './giaovien/giaovien.module';
 import { CanBoModule } from './can-bo/can-bo.module';
 import { HocSinhModule } from './hoc-sinh/hoc-sinh.module';
 import { UploadModule } from './upload/upload.module';
+import { LenLopModule } from './len-lop/len-lop.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { UploadModule } from './upload/upload.module';
     CanBoModule,
     HocSinhModule,
     UploadModule,
+    LenLopModule,
   ],
 })
 export class AppModule {}

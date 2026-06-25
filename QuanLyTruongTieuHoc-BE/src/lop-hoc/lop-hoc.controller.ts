@@ -1,9 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 import { LopHocService } from './lop-hoc.service';
 
 @Controller('lop-hoc')
-@UseGuards(JwtAuthGuard)
 export class LopHocController {
   constructor(private readonly lopHocService: LopHocService) {}
 

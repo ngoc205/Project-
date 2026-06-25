@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axiosClient';
+import { useNotification } from '../components/NotificationProvider';
 
 export default function AdminTaiKhoanPage() {
+  const { showError, showSuccess } = useNotification();
   const [taiKhoans, setTaiKhoans] = useState([]);
   const [formData, setFormData] = useState({ TenDangNhap: '', MatKhau: '', VaiTro: 'GiaoVien' });
   const [isEditing, setIsEditing] = useState(false);
@@ -25,17 +27,17 @@ export default function AdminTaiKhoanPage() {
     try {
       if (isEditing) {
         await api.put(`/tai-khoan/${editId}`, formData);
-        alert('Cập nhật thành công!');
+        showSuccess('Cập nhật tài khoản thành công!');
       } else {
         await api.post('/tai-khoan', formData);
-        alert('Thêm mới thành công!');
+        showSuccess('Thêm tài khoản thành công!');
       }
       setFormData({ TenDangNhap: '', MatKhau: '', VaiTro: 'GiaoVien' });
       setIsEditing(false);
       setEditId(null);
       fetchTaiKhoans();
     } catch (err) {
-      alert('Lỗi: ' + (err.response?.data?.message || err.message));
+      showError('Lỗi: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -43,10 +45,11 @@ export default function AdminTaiKhoanPage() {
     if (window.confirm('Bạn có chắc muốn xóa tài khoản này?')) {
       try {
         await api.delete(`/tai-khoan/${id}`);
+        showSuccess('Xóa tài khoản thành công!');
         fetchTaiKhoans();
       } catch (err) {
         console.error('Lỗi khi xóa tài khoản', err);
-        alert('Lỗi khi xóa tài khoản');
+        showError('Lỗi khi xóa tài khoản');
       }
     }
   };

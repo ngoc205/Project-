@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { GiaovienService } from './giaovien.service';
 
 @Controller('api/giaovien')
@@ -13,6 +13,11 @@ export class GiaovienController {
   @Get('options')
   getOptions() {
     return this.giaovienService.getOptions();
+  }
+
+  @Get('search')
+  search(@Query('keyword') keyword: string) {
+    return this.giaovienService.search(keyword);
   }
 
   @Get('detail/:id')

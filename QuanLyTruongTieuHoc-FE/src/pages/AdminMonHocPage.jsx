@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axiosClient';
+import { useNotification } from '../components/NotificationProvider';
 
 export default function AdminMonHocPage() {
+  const { showError, showSuccess } = useNotification();
   const [monHocs, setMonHocs] = useState([]);
   const [formData, setFormData] = useState({
     TenMonHoc: '',
@@ -35,10 +37,10 @@ export default function AdminMonHocPage() {
 
       if (isEditing) {
         await api.put(`/mon-hoc/${editId}`, payload);
-        alert('Cập nhật thành công!');
+        showSuccess('Cập nhật môn học thành công!');
       } else {
         await api.post('/mon-hoc', payload);
-        alert('Thêm mới thành công!');
+        showSuccess('Thêm môn học thành công!');
       }
 
       setFormData({ TenMonHoc: '', SoTiet: '', MoTa: '' });
@@ -46,7 +48,7 @@ export default function AdminMonHocPage() {
       setEditId(null);
       fetchMonHocs();
     } catch (err) {
-      alert('Có lỗi xảy ra: ' + (err.response?.data?.message || err.message));
+      showError('Có lỗi xảy ra: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -64,11 +66,11 @@ export default function AdminMonHocPage() {
     if (window.confirm('Bạn có chắc muốn xóa môn học này?')) {
       try {
         await api.delete(`/mon-hoc/${id}`);
-        alert('Xóa thành công!');
+        showSuccess('Xóa môn học thành công!');
         fetchMonHocs();
       } catch (err) {
         console.error('Lỗi khi xóa môn học', err);
-        alert('Lỗi khi xóa môn học');
+        showError('Lỗi khi xóa môn học');
       }
     }
   };

@@ -16,8 +16,8 @@ interface GiaoVienPayload {
 export class GiaovienService {
   constructor(@InjectDataSource() private dataSource: DataSource) {}
 
-  async findAll() {
-    return this.dataSource.query(`
+  private teacherSelectSql(whereSql = '') {
+    return `
       SELECT
         gv.GiaoVienID,
         gv.TaiKhoanID,
@@ -30,12 +30,23 @@ export class GiaovienService {
         gv.IsActive,
         gv.NgayTao,
         gv.NgayCapNhat,
-        l.TenLop AS LopChuNhiem
+        lopCn.TenLop AS LopChuNhiem
       FROM GiaoVien gv
       LEFT JOIN TaiKhoan tk ON tk.TaiKhoanID = gv.TaiKhoanID
-      LEFT JOIN Lop l ON l.GiaoVienID = gv.GiaoVienID
+      OUTER APPLY (
+        SELECT TOP 1 l.TenLop
+        FROM Lop l
+        LEFT JOIN ThoiGian tg ON tg.ThoiGianID = l.ThoiGianID
+        WHERE l.GiaoVienID = gv.GiaoVienID
+        ORDER BY ISNULL(tg.IsCurrent, 0) DESC, tg.NgayBatDau DESC, l.LopID DESC
+      ) lopCn
+      ${whereSql}
       ORDER BY gv.GiaoVienID DESC
-    `);
+    `;
+  }
+
+  async findAll() {
+    return this.dataSource.query(this.teacherSelectSql());
   }
 
   async getOptions() {
@@ -46,6 +57,21 @@ export class GiaovienService {
       WHERE tk.VaiTro = 'GiaoVien' AND ISNULL(tk.IsActive, 1) = 1 AND gv.GiaoVienID IS NULL
       ORDER BY tk.TenDangNhap
     `);
+  }
+
+  async search(keyword = '') {
+    const normalizedKeyword = keyword.trim();
+    if (!normalizedKeyword) return this.findAll();
+
+    return this.dataSource.query(
+      this.teacherSelectSql(`
+      WHERE gv.HoTen LIKE @0
+        OR CAST(gv.GiaoVienID AS varchar) LIKE @0
+        OR ISNULL(gv.SoDienThoai, '') LIKE @0
+        OR ISNULL(tk.TenDangNhap, '') LIKE @0
+      `),
+      [`%${normalizedKeyword}%`],
+    );
   }
 
   async findOne(giaoVienId: number) {

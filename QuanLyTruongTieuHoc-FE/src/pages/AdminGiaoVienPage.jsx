@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axiosClient';
+import { useNotification } from '../components/NotificationProvider';
 
 const emptyForm = {
   TaiKhoanID: '',
@@ -50,6 +51,7 @@ function resolveImageSrc(value) {
 }
 
 export default function AdminGiaoVienPage() {
+  const { showError, showSuccess } = useNotification();
   const [teachers, setTeachers] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -69,7 +71,7 @@ export default function AdminGiaoVienPage() {
   useEffect(() => {
     loadData().catch((err) => {
       console.error('Lỗi tải danh sách giáo viên', err);
-      alert('Không tải được danh sách giáo viên.');
+      showError('Không tải được danh sách giáo viên.');
     });
   }, []);
 
@@ -103,15 +105,15 @@ export default function AdminGiaoVienPage() {
     try {
       if (editingId) {
         await api.put(`/api/giaovien/${editingId}`, payload);
-        alert('Cập nhật giáo viên thành công!');
+        showSuccess('Cập nhật giáo viên thành công!');
       } else {
         await api.post('/api/giaovien', payload);
-        alert('Thêm giáo viên thành công!');
+        showSuccess('Thêm giáo viên thành công!');
       }
       resetForm();
       await loadData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Lưu giáo viên thất bại!');
+      showError(err.response?.data?.message || 'Lưu giáo viên thất bại!');
     } finally {
       setLoading(false);
     }
@@ -128,7 +130,7 @@ export default function AdminGiaoVienPage() {
       const res = await api.post('/upload/image', formData);
       setForm((current) => ({ ...current, AnhDaiDien: res.data.filename }));
     } catch (err) {
-      alert(err.response?.data?.message || 'Upload ảnh thất bại!');
+      showError(err.response?.data?.message || 'Upload ảnh thất bại!');
     } finally {
       setUploadingImage(false);
     }
@@ -140,8 +142,9 @@ export default function AdminGiaoVienPage() {
     try {
       await api.delete(`/api/giaovien/${teacher.GiaoVienID}`);
       await loadData();
+      showSuccess('Xóa giáo viên thành công!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Xóa giáo viên thất bại!');
+      showError(err.response?.data?.message || 'Xóa giáo viên thất bại!');
     }
   };
 

@@ -141,7 +141,7 @@ function TimetablePage() {
                                   {entry.TenMonHoc}
                                 </div>
                               ) : (
-                                <div className="viewer-empty">-</div>
+                                <div className="viewer-empty">Trống tiết</div>
                               )}
                             </td>
                           );

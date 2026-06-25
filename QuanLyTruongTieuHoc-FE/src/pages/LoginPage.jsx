@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import AuthLayout, { AuthField } from '../components/AuthLayout';
 import api from '../api/axiosClient';
+import { useNotification } from '../components/NotificationProvider';
 
 export default function LoginPage({ onNavigate }) {
+  const { showError, showSuccess } = useNotification();
   const [formData, setFormData] = useState({ 
     TenDangNhap: '', 
     MatKhau: '' 
@@ -25,7 +27,7 @@ export default function LoginPage({ onNavigate }) {
         VaiTro: userInfo.VaiTro
       }));
 
-      alert("Đăng nhập thành công!");
+      showSuccess('Đăng nhập thành công!');
       
       // Rẽ nhánh điều hướng dựa vào VaiTro
       if (userInfo.VaiTro === 'CanBo') {
@@ -38,7 +40,7 @@ export default function LoginPage({ onNavigate }) {
 
     } catch (err) {
       console.error("Lỗi đăng nhập:", err);
-      alert("Đăng nhập thất bại! Sai tên đăng nhập hoặc mật khẩu.");
+      showError('Đăng nhập thất bại! Sai tên đăng nhập hoặc mật khẩu.');
     }
   };
 

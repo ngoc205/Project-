@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axiosClient';
+import { useNotification } from '../components/NotificationProvider';
 
 const selectStyle = {
   width: '100%',
@@ -39,7 +40,14 @@ function cellKey(thuId, tietHocId) {
   return `${thuId}-${tietHocId}`;
 }
 
+function shortLessonName(lesson) {
+  return String(lesson.TenTiet || `Tiết ${lesson.TietHocID}`)
+    .replace(/\s*[-–—]?\s*\(?\s*(sáng|chiều)\s*\)?\s*$/i, '')
+    .trim();
+}
+
 export default function AdminThoiKhoaBieuPage() {
+  const { showError, showSuccess } = useNotification();
   const [options, setOptions] = useState({ khoi: [], lop: [], thu: [], tietHoc: [], monHoc: [] });
   const [selectedKhoiId, setSelectedKhoiId] = useState('');
   const [selectedLopId, setSelectedLopId] = useState('');
@@ -63,7 +71,7 @@ export default function AdminThoiKhoaBieuPage() {
       })
       .catch((err) => {
         console.error('Lỗi tải dữ liệu thời khóa biểu', err);
-        alert('Không tải được dữ liệu thời khóa biểu.');
+        showError('Không tải được dữ liệu thời khóa biểu.');
       });
   }, []);
 
@@ -98,7 +106,7 @@ export default function AdminThoiKhoaBieuPage() {
       setClassInfo(res.data.lop);
       setGrid(nextGrid);
     } catch (err) {
-      alert(err.response?.data?.message || 'Không xem được thời khóa biểu!');
+      showError(err.response?.data?.message || 'Không xem được thời khóa biểu!');
     } finally {
       setLoading(false);
     }
@@ -109,7 +117,7 @@ export default function AdminThoiKhoaBieuPage() {
   };
 
   const applyTimetable = async () => {
-    if (!selectedLopId) return alert('Vui lòng chọn lớp!');
+    if (!selectedLopId) return showError('Vui lòng chọn lớp!');
     if (!window.confirm('Bạn có chắc muốn áp dụng thay đổi thời khóa biểu này?')) return;
 
     const entries = [];
@@ -132,9 +140,9 @@ export default function AdminThoiKhoaBieuPage() {
       });
       setClassInfo(res.data.lop);
       setGrid(nextGrid);
-      alert('Cập nhật thành công');
+      showSuccess('Cập nhật thời khóa biểu thành công!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Cập nhật thời khóa biểu thất bại!');
+      showError(err.response?.data?.message || 'Cập nhật thời khóa biểu thất bại!');
     } finally {
       setLoading(false);
     }
@@ -177,22 +185,22 @@ export default function AdminThoiKhoaBieuPage() {
             </button>
           </div>
 
-          <div style={{ overflowX: 'auto', padding: '18px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: `${240 + options.thu.length * 190}px` }}>
+          <div style={{ overflow: 'hidden', padding: '18px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
               <thead>
                 <tr>
-                  <th style={thStyle}>Tiết</th>
+                  <th style={{ ...thStyle, width: '64px' }}>Tiết</th>
                   {options.thu.map((thu) => <th key={thu.ThuID} style={thStyle}>{thu.TenThu}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {options.tietHoc.map((tiet) => (
                   <tr key={tiet.TietHocID}>
-                    <td style={{ ...tdStyle, fontWeight: 700, color: '#1a365d', background: '#f8fafc', width: '180px' }}>{tiet.TenTiet}</td>
+                    <td style={{ ...tdStyle, padding: '8px 6px', fontWeight: 700, color: '#1a365d', background: '#f8fafc', textAlign: 'center', whiteSpace: 'nowrap' }}>{shortLessonName(tiet)}</td>
                     {options.thu.map((thu) => (
-                      <td key={thu.ThuID} style={tdStyle}>
-                        <select value={grid[cellKey(thu.ThuID, tiet.TietHocID)] || ''} onChange={(e) => setSubject(thu.ThuID, tiet.TietHocID, e.target.value)} style={selectStyle}>
-                          <option value="">- Chưa chọn -</option>
+                      <td key={thu.ThuID} style={{ ...tdStyle, padding: '7px 6px' }}>
+                        <select value={grid[cellKey(thu.ThuID, tiet.TietHocID)] || ''} onChange={(e) => setSubject(thu.ThuID, tiet.TietHocID, e.target.value)} style={{ ...selectStyle, padding: '9px 6px', fontSize: '13px' }}>
+                          <option value="">Trống tiết</option>
                           {options.monHoc.map((mon) => <option key={mon.MonHocID} value={mon.MonHocID}>{mon.TenMonHoc}</option>)}
                         </select>
                       </td>
