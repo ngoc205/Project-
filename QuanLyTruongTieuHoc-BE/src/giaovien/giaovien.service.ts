@@ -25,6 +25,7 @@ export class GiaovienService {
     return await this.dataSource.query(query, [id]);
   }
 
+<<<<<<< Updated upstream
   // Lấy thông tin Lớp chủ nhiệm dựa vào TaiKhoanID
   async getLopChuNhiem(id: number) {
     const query = `
@@ -36,4 +37,53 @@ export class GiaovienService {
     const result = await this.dataSource.query(query, [id]);
     return result.length > 0 ? { tenLop: result[0].tenLop, siSo: 35 } : null; 
   }
+=======
+async getChiTietHocSinh(hocSinhId: number) {
+  // JOIN bảng HocSinh với HocBa để lấy nhận xét và thông tin
+  const rows = await this.dataSource.query(`
+    SELECT hs.*, hb.NhanXet, hb.DoLenLop
+    FROM HocSinh hs
+    LEFT JOIN HocBa hb ON hs.HocSinhID = hb.HocSinhID
+    WHERE hs.HocSinhID = @0
+  `, [hocSinhId]);
+
+  return rows[0]; // Trả về thông tin học sinh
+}
+
+// Lấy danh sách môn học để giáo viên nhập điểm (Phiên bản an toàn)
+  async getMonHocTheoLop(lopId: number) {
+    try {
+      // Bỏ qua các bảng liên kết phức tạp, lấy thẳng tất cả môn học đang có
+      return await this.dataSource.query(`
+        SELECT MonHocID, TenMonHoc 
+        FROM MonHoc
+      `);
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách môn học:", error);
+      return [];
+    }
+  }
+
+  // Lấy thông tin Lớp chủ nhiệm và Danh sách học sinh dựa vào TaiKhoanID
+  async getLopChuNhiem(id: number) {
+    const lopList = await this.dataSource.query(
+      `SELECT l.LopID, l.TenLop FROM Lop l 
+       JOIN GiaoVien gv ON l.GiaoVienID = gv.GiaoVienID 
+       WHERE gv.TaiKhoanID = @0`, [id]
+    );
+
+    if (!lopList || lopList.length === 0) return { success: false, message: 'Chưa có lớp chủ nhiệm', data: null };
+
+    const danhSachHocSinh = await this.dataSource.query(
+      `SELECT HocSinhID, TenHocSinh, NgaySinh, GioiTinh, DiaChi FROM HocSinh WHERE LopID = @0`,
+      [lopList[0].LopID]
+    );
+
+    return {
+      success: true,
+      lopChuNhiem: { id: lopList[0].LopID, tenLop: lopList[0].TenLop, siSo: danhSachHocSinh.length },
+      danhSachHocSinh: danhSachHocSinh
+    };
+}
+>>>>>>> Stashed changes
 }
