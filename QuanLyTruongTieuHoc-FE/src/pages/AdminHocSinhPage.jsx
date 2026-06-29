@@ -8,6 +8,8 @@ export default function AdminHocSinhPage() {
   const [editId, setEditId] = useState(null)
   const [search, setSearch] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 5
 
   const [form, setForm] = useState({
     TenHocSinh: '',
@@ -30,6 +32,7 @@ export default function AdminHocSinhPage() {
   const loadData = async () => {
     const res = await api.get('/hoc-sinh')
     setList(res.data)
+    setCurrentPage(1)
   }
 
   useEffect(() => {
@@ -38,6 +41,7 @@ export default function AdminHocSinhPage() {
 
   const handleSearch = async (keyword) => {
     setSearch(keyword)
+    setCurrentPage(1)
 
     if (keyword.trim() === '') {
       loadData()
@@ -94,6 +98,12 @@ export default function AdminHocSinhPage() {
     await api.delete(`/hoc-sinh/${id}`)
     loadData()
   }
+
+  const totalPages = Math.ceil(list.length / itemsPerPage)
+  const currentStudents = list.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
 
   return (
     <div style={{ padding: 30, background: '#f4f6fb', minHeight: '100vh' }}>
@@ -249,7 +259,7 @@ export default function AdminHocSinhPage() {
           </thead>
 
           <tbody>
-            {list.map((item) => (
+            {currentStudents.map((item) => (
               <tr key={item.HocSinhID} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={td}>{item.HocSinhID}</td>
                 <td style={td}>
@@ -267,7 +277,7 @@ export default function AdminHocSinhPage() {
                   )}
                 </td>
                 <td style={td}>{item.TenHocSinh}</td>
-                <td style={td}>{item.NgaySinh}</td>
+                <td style={td}>{formatDateView(item.NgaySinh)}</td>
                 <td style={td}>{item.GioiTinh}</td>
                 <td style={td}>{item.DiaChi || '-'}</td>
                 <td style={td}>
@@ -281,9 +291,18 @@ export default function AdminHocSinhPage() {
                 </td>
               </tr>
             ))}
+            {list.length === 0 && (
+              <tr>
+                <td colSpan="7" style={{ ...td, textAlign: 'center', color: '#64748b' }}>
+                  Không tìm thấy học sinh.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      <Pagination currentPage={currentPage} totalPages={totalPages} onChange={setCurrentPage} />
 
     </div>
   )
@@ -294,6 +313,37 @@ function resolveImageSrc(value) {
   if (!value) return ''
   if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) return value
   return `/images/${value}`
+}
+
+function formatDateView(value) {
+  if (!value) return '-'
+  return new Date(value).toLocaleDateString('vi-VN')
+}
+
+function Pagination({ currentPage, totalPages, onChange }) {
+  if (totalPages <= 1) return null
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
+      <button disabled={currentPage === 1} onClick={() => onChange(currentPage - 1)}>◀</button>
+      {Array.from({ length: totalPages }, (_, index) => (
+        <button
+          key={index}
+          onClick={() => onChange(index + 1)}
+          style={{
+            padding: '8px 12px',
+            background: currentPage === index + 1 ? '#2b6cb0' : '#fff',
+            color: currentPage === index + 1 ? '#fff' : '#000',
+            border: '1px solid #64748b',
+            cursor: 'pointer',
+          }}
+        >
+          {index + 1}
+        </button>
+      ))}
+      <button disabled={currentPage === totalPages} onClick={() => onChange(currentPage + 1)}>▶</button>
+    </div>
+  )
 }
 
 const inputStyle = {

@@ -1,20 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { HocSinh } from './entities/hoc-sinh.entity';
-import { HocSinhService } from './hoc-sinh.service';
+import { DiemService } from './diem.service';
+import { DiemThi } from './entities/diem-thi.entity';
 
-describe('HocSinhService', () => {
-  let service: HocSinhService;
+describe('DiemService', () => {
+  let service: DiemService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        HocSinhService,
-        { provide: getRepositoryToken(HocSinh), useValue: {} },
+        DiemService,
+        { provide: getRepositoryToken(DiemThi), useValue: {} },
       ],
     }).compile();
 
-    service = module.get<HocSinhService>(HocSinhService);
+    service = module.get<DiemService>(DiemService);
   });
 
   it('should be defined', () => {

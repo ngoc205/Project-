@@ -9,6 +9,7 @@ import { CanBoModule } from './can-bo/can-bo.module';
 import { HocSinhModule } from './hoc-sinh/hoc-sinh.module';
 import { UploadModule } from './upload/upload.module';
 import { LenLopModule } from './len-lop/len-lop.module';
+import { DiemModule } from './diem/diem.module';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { LenLopModule } from './len-lop/len-lop.module';
       host: process.env.DB_HOST || '127.0.0.1',
       port: Number(process.env.DB_PORT || 1433),
       username: process.env.DB_USERNAME || 'sa',
-      password: process.env.DB_PASSWORD || '123456Aa@',
+      password: process.env.DB_PASSWORD || 'Thuong@0702',
       database: process.env.DB_DATABASE || 'PriSchool',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: false,
@@ -35,6 +36,7 @@ import { LenLopModule } from './len-lop/len-lop.module';
     HocSinhModule,
     UploadModule,
     LenLopModule,
+    DiemModule,
   ],
 })
 export class AppModule {}

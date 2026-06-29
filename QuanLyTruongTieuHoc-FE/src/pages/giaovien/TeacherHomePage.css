@@ -21,9 +21,9 @@
 }
 
 .teacher-home-container {
-  max-width: 1280px;
+  max-width: 1360px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 18px 20px;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: var(--text-main);
   background-color: var(--bg-main);
@@ -36,12 +36,12 @@
 .welcome-banner {
   background: var(--primary-gradient);
   color: #ffffff;
-  padding: 28px 36px;
-  border-radius: var(--radius-lg);
+  padding: 16px 28px;
+  border-radius: var(--radius-md);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 18px;
   box-shadow: var(--shadow-md);
   position: relative;
   overflow: hidden;
@@ -52,23 +52,34 @@
   position: absolute;
   top: -50%;
   right: -10%;
-  width: 300px;
-  height: 300px;
+  width: 220px;
+  height: 220px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: 50%;
   pointer-events: none;
 }
 
+.welcome-banner h2 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.welcome-banner p {
+  margin: 0;
+  font-size: 15px;
+}
+
 .banner-content h2 {
   margin: 0 0 6px 0;
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.5px;
 }
 
 .banner-content p {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   color: #e2e8f0;
 }
 
@@ -101,8 +112,8 @@
    ========================================================================== */
 .timetable-section {
   background-color: #ffffff;
-  padding: 32px;
-  border-radius: var(--radius-lg);
+  padding: 18px;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   border: 1px solid #e2e8f0;
 }
@@ -110,8 +121,8 @@
 .timetable-title {
   text-align: left;
   color: var(--text-main);
-  margin-bottom: 24px;
-  font-size: 22px;
+  margin-bottom: 14px;
+  font-size: 20px;
   font-weight: 800;
   position: relative;
   padding-left: 14px;
@@ -129,7 +140,7 @@
 }
 
 .table-responsive {
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
   overflow: hidden;
 }
@@ -145,22 +156,22 @@
   background-color: #f1f5f9; /* Xám sáng, tách biệt hẳn với ruột bảng */
   color: #334155;
   font-weight: 700;
-  font-size: 15px;
-  padding: 16px 12px;
+  font-size: 13px;
+  padding: 10px 8px;
   text-transform: uppercase;
   border-bottom: 2px solid var(--border-color);
 }
 
 .timetable td {
   border: 1px solid var(--border-color);
-  padding: 10px;
-  height: 105px; 
-  width: 180px;  
+  padding: 5px;
+  height: 64px;
+  width: 170px;
 }
 
 /* Định dạng cột Tiết Học */
 .period-col {
-  width: 110px;
+  width: 92px;
   background-color: #f8fafc;
 }
 
@@ -168,7 +179,7 @@
   font-weight: 700;
   background-color: #f8fafc;
   color: #475569;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 /* ==========================================================================
@@ -176,28 +187,28 @@
    ========================================================================== */
 .has-lesson {
   background-color: #ffffff !important;
-  padding: 6px !important; 
+  padding: 5px !important;
 }
 
 .lesson-info {
   background: var(--lesson-bg);
-  border-left: 4px solid var(--lesson-border);
-  border-radius: var(--radius-sm);
-  padding: 12px 8px;
+  border-left: 3px solid var(--lesson-border);
+  border-radius: 7px;
+  padding: 7px 6px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 8px;
-  height: calc(100% - 4px);
+  gap: 4px;
+  min-height: 50px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
   border: 1px solid #e2e8f0; /* Thêm viền mỏng bo quanh thẻ */
-  border-left: 4px solid var(--lesson-border); /* Giữ lại viền nhấn bên trái */
+  border-left: 3px solid var(--lesson-border); /* Giữ lại viền nhấn bên trái */
   transition: all 0.2s ease;
 }
 
 .lesson-info:hover {
-  transform: translateY(-3px);
+  transform: translateY(-1px);
   box-shadow: var(--shadow-md);
   border-color: #bfdbfe;
   background-color: #ffffff;
@@ -206,22 +217,26 @@
 .subject-name {
   font-weight: 800;
   color: var(--text-main); /* Chuyển về Đen ngói để đọc sắc nét nhất */
-  font-size: 16px;
-  line-height: 1.2;
+  font-size: 13px;
+  line-height: 1.15;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .class-name {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #1d4ed8;
   background-color: #dbeafe; /* Nền xanh lam cực nhạt */
-  padding: 4px 12px;
+  padding: 2px 10px;
   border-radius: 20px; 
   display: inline-block;
 }
 
 .room-name {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-muted); /* Xám đậm dễ đọc */
   font-weight: 500;
 }
@@ -233,7 +248,7 @@
 
 .empty-dash {
   color: #94a3b8; /* Tăng độ đậm của dấu gạch ngang lên để dễ thấy hơn */
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 400;
 }
 

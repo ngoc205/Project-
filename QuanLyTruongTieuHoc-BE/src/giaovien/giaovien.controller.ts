@@ -20,14 +20,55 @@ export class GiaovienController {
     return this.giaovienService.search(keyword);
   }
 
+  @Get('hocsinh/detail/:id')
+  getChiTietHocSinh(@Param('id') id: string) {
+    return this.giaovienService.getChiTietHocSinh(Number(id));
+  }
+
+  @Get('lop/:lopId/monhoc')
+  getMonHocTheoLop(@Param('lopId') lopId: string) {
+    return this.giaovienService.getMonHocTheoLop(Number(lopId));
+  }
+
   @Get('detail/:id')
   findOne(@Param('id') id: string) {
     return this.giaovienService.findOne(Number(id));
   }
 
+  @Get('teacher-detail/:id')
+  findTeacherDetail(@Param('id') id: string) {
+    return this.giaovienService.findOne(Number(id));
+  }
+
+  @Get(':id/diem')
+  getBangDiemLopChuNhiem(@Param('id') id: string, @Query('monHocId') monHocId?: string) {
+    return this.giaovienService.getBangDiemLopChuNhiem(
+      Number(id),
+      monHocId ? Number(monHocId) : undefined,
+    );
+  }
+
+  @Get(':id/lich-day')
+  getLichDay(@Param('id') id: string) {
+    return this.giaovienService.getLichDay(Number(id));
+  }
+
+  @Get(':id/lop-chu-nhiem')
+  getLopChuNhiem(@Param('id') id: string) {
+    return this.giaovienService.getLopChuNhiem(Number(id));
+  }
+
   @Post()
   create(@Body() body: Parameters<GiaovienService['create']>[0]) {
     return this.giaovienService.create(body);
+  }
+
+  @Put(':id/diem')
+  luuBangDiemLopChuNhiem(
+    @Param('id') id: string,
+    @Body() body: Parameters<GiaovienService['luuBangDiemLopChuNhiem']>[1],
+  ) {
+    return this.giaovienService.luuBangDiemLopChuNhiem(Number(id), body);
   }
 
   @Put(':id')
@@ -38,17 +79,5 @@ export class GiaovienController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.giaovienService.remove(Number(id));
-  }
-
-  // Mở API lấy lịch dạy
-  @Get(':id/lich-day')
-  async getLichDay(@Param('id') id: string) {
-    return await this.giaovienService.getLichDay(Number(id));
-  }
-
-  // Mở API lấy thông tin lớp chủ nhiệm
-  @Get(':id/lop-chu-nhiem')
-  async getLopChuNhiem(@Param('id') id: string) {
-    return await this.giaovienService.getLopChuNhiem(Number(id));
   }
 }

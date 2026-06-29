@@ -23,6 +23,7 @@ export default function LoginPage({ onNavigate }) {
       localStorage.setItem('vaiTro', userInfo.VaiTro);
       localStorage.setItem('user', JSON.stringify({
         TaiKhoanID: userInfo.TaiKhoanID,
+        GiaoVienID: userInfo.GiaoVienID,
         TenDangNhap: userInfo.TenDangNhap,
         VaiTro: userInfo.VaiTro
       }));

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository } from 'typeorm';
 
 import { HocSinh } from './entities/hoc-sinh.entity';
 
@@ -13,6 +13,9 @@ export class HocSinhService {
 
   // ⭐ THÊM: CREATE
   async create(hocSinh: any) {
+    if (!hocSinh.GioiTinh || hocSinh.GioiTinh === '') {
+      hocSinh.GioiTinh = 'Nam';
+    }
     return await this.hocSinhRepository.save(hocSinh);
   }
 

@@ -7,13 +7,17 @@ export class LenLopService {
 
   private gradeSummarySql(studentAlias: string, timeExpression: string) {
     return `
-      SELECT COUNT(*) AS TongMon,
+      SELECT COUNT(mh.MonHocID) AS TongMon,
+        SUM(CASE WHEN dt.DiemMieng IS NOT NULL AND dt.DiemGiuaKy IS NOT NULL AND dt.DiemCuoiKy IS NOT NULL THEN 1 ELSE 0 END) AS TongMonDaCoDiem,
         AVG(CASE WHEN dt.DiemMieng IS NOT NULL AND dt.DiemGiuaKy IS NOT NULL AND dt.DiemCuoiKy IS NOT NULL
           THEN (dt.DiemMieng + dt.DiemGiuaKy * 2 + dt.DiemCuoiKy * 3) / 6.0
           ELSE NULL
         END) AS DiemTrungBinh
-      FROM DiemThi dt
-      WHERE dt.HocSinhID = ${studentAlias}.HocSinhID AND dt.ThoiGianID = ${timeExpression}
+      FROM MonHoc mh
+      LEFT JOIN DiemThi dt ON dt.MonHocID = mh.MonHocID
+        AND dt.HocSinhID = ${studentAlias}.HocSinhID
+        AND dt.ThoiGianID = ${timeExpression}
+      WHERE ISNULL(mh.IsActive, 1) = 1
     `;
   }
 
@@ -76,9 +80,9 @@ export class LenLopService {
       `
         SELECT l.LopID, l.TenLop, l.KhoiID, k.TenKhoi,
           COUNT(hs.HocSinhID) AS TongSo,
-          SUM(CASE WHEN hs.HocSinhID IS NOT NULL AND ISNULL(grade.TongMon, 0) > 0 AND ISNULL(grade.DiemTrungBinh, 0) >= 5 AND l.KhoiID < @1 THEN 1 ELSE 0 END) AS DuDieuKien,
-          SUM(CASE WHEN hs.HocSinhID IS NOT NULL AND (ISNULL(grade.TongMon, 0) = 0 OR ISNULL(grade.DiemTrungBinh, 0) < 5) THEN 1 ELSE 0 END) AS OLaLop,
-          SUM(CASE WHEN hs.HocSinhID IS NOT NULL AND ISNULL(grade.TongMon, 0) > 0 AND ISNULL(grade.DiemTrungBinh, 0) >= 5 AND l.KhoiID = @1 THEN 1 ELSE 0 END) AS TotNghiep
+          SUM(CASE WHEN hs.HocSinhID IS NOT NULL AND ISNULL(grade.TongMon, 0) > 0 AND ISNULL(grade.TongMonDaCoDiem, 0) = ISNULL(grade.TongMon, 0) AND ISNULL(grade.DiemTrungBinh, 0) >= 5 AND l.KhoiID < @1 THEN 1 ELSE 0 END) AS DuDieuKien,
+          SUM(CASE WHEN hs.HocSinhID IS NOT NULL AND (ISNULL(grade.TongMon, 0) = 0 OR ISNULL(grade.TongMonDaCoDiem, 0) < ISNULL(grade.TongMon, 0) OR ISNULL(grade.DiemTrungBinh, 0) < 5) THEN 1 ELSE 0 END) AS OLaLop,
+          SUM(CASE WHEN hs.HocSinhID IS NOT NULL AND ISNULL(grade.TongMon, 0) > 0 AND ISNULL(grade.TongMonDaCoDiem, 0) = ISNULL(grade.TongMon, 0) AND ISNULL(grade.DiemTrungBinh, 0) >= 5 AND l.KhoiID = @1 THEN 1 ELSE 0 END) AS TotNghiep
         FROM Lop l
         JOIN Khoi k ON k.KhoiID = l.KhoiID
         JOIN ThoiGian tg ON tg.ThoiGianID = l.ThoiGianID
@@ -130,7 +134,7 @@ export class LenLopService {
         const students = await manager.query(
           `
             SELECT hs.HocSinhID,
-              CASE WHEN ISNULL(grade.TongMon, 0) > 0 AND ISNULL(grade.DiemTrungBinh, 0) >= 5 THEN 1 ELSE 0 END AS DoLenLop
+              CASE WHEN ISNULL(grade.TongMon, 0) > 0 AND ISNULL(grade.TongMonDaCoDiem, 0) = ISNULL(grade.TongMon, 0) AND ISNULL(grade.DiemTrungBinh, 0) >= 5 THEN 1 ELSE 0 END AS DoLenLop
             FROM HocSinh hs
             OUTER APPLY (
               ${this.gradeSummarySql('hs', '@1')}

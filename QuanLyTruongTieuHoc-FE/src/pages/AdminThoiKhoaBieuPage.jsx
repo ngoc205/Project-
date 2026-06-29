@@ -46,6 +46,10 @@ function shortLessonName(lesson) {
     .trim();
 }
 
+function classOptionLabel(lop) {
+  return `${lop.TenLop}${lop.TenGiaoVien ? ` - ${lop.TenGiaoVien}` : ' - Chưa phân công'}`;
+}
+
 export default function AdminThoiKhoaBieuPage() {
   const { showError, showSuccess } = useNotification();
   const [options, setOptions] = useState({ khoi: [], lop: [], thu: [], tietHoc: [], monHoc: [] });
@@ -168,7 +172,7 @@ export default function AdminThoiKhoaBieuPage() {
           Lớp
           <select value={selectedLopId} onChange={(e) => { setSelectedLopId(e.target.value); setClassInfo(null); setGrid({}); }} style={{ ...selectStyle, marginTop: '7px' }}>
             <option value="">Chọn lớp</option>
-            {filteredClasses.map((lop) => <option key={lop.LopID} value={lop.LopID}>{lop.TenLop}</option>)}
+            {filteredClasses.map((lop) => <option key={lop.LopID} value={lop.LopID}>{classOptionLabel(lop)}</option>)}
           </select>
         </label>
       </section>

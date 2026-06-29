@@ -2,58 +2,55 @@ import React, { useState, useEffect } from 'react';
 import api from '../../api/axiosClient';
 import './TeacherHomePage.css';
 
-const TeacherHomePage = ({ teacherId, onLogout }) => {
+const TeacherHomePage = ({ teacherId }) => {
   const [lichDay, setLichDay] = useState([]);
   const [lopChuNhiem, setLopChuNhiem] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // 1. KHAI BÁO CÁC BIẾN CẦN THIẾT ĐỂ RENDER
+  const days = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu'];
+  const periods = [1, 2, 3, 4, 5, 6, 7, 8];
+
   useEffect(() => {
-    // Gọi API lấy lịch dạy và thông tin lớp chủ nhiệm cùng lúc
     const fetchTeacherData = async () => {
       try {
-        const [lichDayResponse, lopChuNhiemResponse] = await Promise.all([
+        const [lichDayRes, lopRes] = await Promise.all([
           api.get(`/api/giaovien/${teacherId}/lich-day`),
           api.get(`/api/giaovien/${teacherId}/lop-chu-nhiem`)
         ]);
 
-        // Cập nhật state với dữ liệu mảng
-        setLichDay(lichDayResponse.data);
-        setLopChuNhiem(lopChuNhiemResponse.data);
+        setLichDay(lichDayRes.data);
+        
+        if (lopRes.data && lopRes.data.success) {
+          setLopChuNhiem(lopRes.data.lopChuNhiem);
+        } else {
+          setLopChuNhiem(null);
+        }
       } catch (error) {
-        console.error('Lỗi khi lấy dữ liệu giáo viên:', error);
+        console.error('Lỗi lấy dữ liệu:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    if (teacherId) {
-      fetchTeacherData();
-    }
+    if (teacherId) fetchTeacherData();
   }, [teacherId]);
 
-  if (loading) {
-    return <div className="loading-spinner">Đang tải dữ liệu thời khóa biểu...</div>;
-  }
-
-  // ĐÃ CẬP NHẬT: Tên cột hiển thị khớp 100% với cột TenThu trong SQL Server
-  const days = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu'];
-  const periods = [1, 2, 3, 4, 5]; 
+  if (loading) return <div>Đang tải dữ liệu...</div>;
 
   return (
     <div className="teacher-home-container">
-      {/* Khu vực thông báo và thông tin lớp chủ nhiệm */}
       <div className="welcome-banner">
-        <div className="banner-content">
-          <h2>Xin chào Thầy/Cô!</h2>
-          {lopChuNhiem ? (
-            <p>Giáo viên chủ nhiệm lớp: <span className="highlight-text">{lopChuNhiem.tenLop}</span> (Sĩ số: {lopChuNhiem.siSo})</p>
-          ) : (
-            <p>Hiện tại chưa phân công chủ nhiệm.</p>
-          )}
-        </div>
+        <h2>Xin chào Thầy/Cô!</h2>
+        {lopChuNhiem ? (
+          <p>Giáo viên chủ nhiệm lớp: <strong>{lopChuNhiem.tenLop}</strong> (Sĩ số: {lopChuNhiem.siSo})</p>
+        ) : (
+          <p>Hiện tại chưa phân công chủ nhiệm.</p>
+        )}
       </div>
 
-      {/* Khu vực hiển thị bảng Lịch dạy - Gắn style inline cực mạnh để chống vỡ khung do CSS của App.css */}
+      {/* ĐÃ SỬA: XÓA THẺ ĐÓNG DIV DƯ THỪA Ở ĐÂY */}
+
       <div className="timetable-section" style={{ display: 'block', width: '100%' }}>
         <h3 className="timetable-title">LỊCH GIẢNG DẠY TRONG TUẦN</h3>
         <div className="table-responsive" style={{ overflowX: 'auto' }}>
@@ -71,14 +68,12 @@ const TeacherHomePage = ({ teacherId, onLogout }) => {
                 <tr key={period} style={{ display: 'table-row' }}>
                   <td className="period-cell" style={{ display: 'table-cell' }}>Tiết {period}</td>
                   {days.map(day => {
-                    // Xử lý thông minh: Chuyển hết về chữ thường và xóa khoảng trắng thừa để so khớp tuyệt đối
                     const lesson = Array.isArray(lichDay) 
                       ? lichDay.find(l => 
                           String(l.thu).trim().toLowerCase() === day.trim().toLowerCase() && 
                           Number(l.tiet) === period
                         ) 
                       : null;
-                      
                     return (
                       <td key={`${day}-${period}`} className={lesson ? 'has-lesson' : 'empty-lesson'} style={{ display: 'table-cell' }}>
                         {lesson ? (

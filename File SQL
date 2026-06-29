@@ -1,261 +1,993 @@
--- Bạn mở SSMS, tạo một database tên PriSchool rồi chạy toàn bộ đoạn script dưới đây:
- CREATE DATABASE PriSchool;
- GO
- USE PriSchool;
- GO
+-- Script tạo database PriSchool và dữ liệu hiện có.
+-- Chạy toàn bộ file này trong SSMS sau khi clone project.
+--
+-- Tóm tắt dữ liệu đã export từ database thật:
+--   HocSinh: 33 dòng, có cột LopID tại phần CREATE TABLE dbo.[HocSinh].
+--   TaiKhoan: 7 dòng.
+--   CanBo: 2 dòng.
+--   GiaoVien: 6 dòng.
+--   Lop: 19 dòng.
+--   DiemThi: 208 dòng.
+--   ThoiKhoaBieu: 255 dòng, đủ 8 tiết học.
+--   MonHoc: 12 dòng, Thu: 5 dòng, TietHoc: 8 dòng.
+--
+-- Các section cần tìm nhanh trong file:
+--   -- Dữ liệu bảng CanBo
+--   -- Dữ liệu bảng DiemThi
+--   -- Dữ liệu bảng GiaoVien
+--   -- Dữ liệu bảng ThoiKhoaBieu
 
--- 1. Bảng TaiKhoan (Chỉ cho phép 'GiaoVien' và 'CanBo')
-CREATE TABLE TaiKhoan (
-    TaiKhoanID INT IDENTITY(1,1) PRIMARY KEY,
-    TenDangNhap VARCHAR(35) NOT NULL UNIQUE,
-    MatKhau VARCHAR(255) NOT NULL, -- Lưu text thô trực tiếp
-    VaiTro VARCHAR(20) NOT NULL CHECK (VaiTro IN ('GiaoVien', 'CanBo')),
-    IsActive BIT DEFAULT 1,
-    NgayTao DATETIME DEFAULT GETDATE(),
-    NgayCapNhat DATETIME DEFAULT GETDATE()
-);
-
--- 2. Bảng CanBo (Đóng vai trò Admin cấp cao điều hành trường)
-CREATE TABLE CanBo (
-    CanBoID INT IDENTITY(1,1) PRIMARY KEY,
-    TaiKhoanID INT NULL FOREIGN KEY REFERENCES TaiKhoan(TaiKhoanID) ON DELETE SET NULL,
-    HoTen NVARCHAR(100) NOT NULL,
-    NgaySinh DATE NULL,
-    SoDienThoai VARCHAR(20) NULL,
-    ChucVu NVARCHAR(100) NULL,
-    IsActive BIT DEFAULT 1,
-    NgayTao DATETIME DEFAULT GETDATE(),
-    NgayCapNhat DATETIME DEFAULT GETDATE()
-);
-
--- 3. Bảng GiaoVien
-CREATE TABLE GiaoVien (
-    GiaoVienID INT IDENTITY(1,1) PRIMARY KEY,
-    TaiKhoanID INT NULL FOREIGN KEY REFERENCES TaiKhoan(TaiKhoanID) ON DELETE SET NULL,
-    HoTen NVARCHAR(100) NOT NULL,
-    NgaySinh DATE NULL,
-    SoDienThoai VARCHAR(20) NULL,
-    DiaChi NVARCHAR(200) NULL,
-    AnhDaiDien VARCHAR(255) NULL,
-    IsActive BIT DEFAULT 1,
-    NgayTao DATETIME DEFAULT GETDATE(),
-    NgayCapNhat DATETIME DEFAULT GETDATE()
-);
-
--- 4. Bảng HocSinh
-CREATE TABLE HocSinh (
-    HocSinhID INT IDENTITY(1,1) PRIMARY KEY,
-    TenHocSinh NVARCHAR(100) NOT NULL,
-    NgaySinh DATE NOT NULL,
-    GioiTinh NVARCHAR(10) NOT NULL CHECK (GioiTinh IN (N'Nam', N'Nữ')),
-    DiaChi NVARCHAR(200) NULL,
-    AnhDaiDien VARCHAR(255) NULL,
-    IsActive BIT DEFAULT 1,
-    NgayTao DATETIME DEFAULT GETDATE()
-);
-
--- 5. Bảng Khoi
-CREATE TABLE Khoi (
-    KhoiID INT IDENTITY(1,1) PRIMARY KEY,
-    TenKhoi NVARCHAR(45) NOT NULL
-);
-
--- 6. Bảng ThoiGian (Năm học & Học kỳ)
-CREATE TABLE ThoiGian (
-    ThoiGianID INT IDENTITY(1,1) PRIMARY KEY,
-    TenNam VARCHAR(20) NOT NULL,
-    TenKy NVARCHAR(20) NOT NULL,
-    IsCurrent BIT DEFAULT 0,
-    NgayBatDau DATE NULL,
-    NgayKetThuc DATE NULL
-);
-
--- 7. Bảng Lop
-CREATE TABLE Lop (
-    LopID INT IDENTITY(1,1) PRIMARY KEY,
-    KhoiID INT NOT NULL FOREIGN KEY REFERENCES Khoi(KhoiID),
-    TenLop VARCHAR(10) NOT NULL,
-    ThoiGianID INT NOT NULL FOREIGN KEY REFERENCES ThoiGian(ThoiGianID),
-    GiaoVienID INT NULL FOREIGN KEY REFERENCES GiaoVien(GiaoVienID) ON DELETE SET NULL,
-    NgayTao DATETIME DEFAULT GETDATE()
-);
-
--- 8. Bảng MonHoc
-CREATE TABLE MonHoc (
-    MonHocID INT IDENTITY(1,1) PRIMARY KEY,
-    TenMonHoc NVARCHAR(100) NOT NULL,
-    SoTiet TINYINT NOT NULL,
-    MoTa NVARCHAR(200) NULL,
-    IsActive BIT DEFAULT 1,
-    NgayTao DATETIME DEFAULT GETDATE(),
-    NgayCapNhat DATETIME DEFAULT GETDATE()
-);
-
--- 9. Bảng MonHoc_Khoi
-CREATE TABLE MonHoc_Khoi (
-    MonHocID INT NOT NULL FOREIGN KEY REFERENCES MonHoc(MonHocID) ON DELETE CASCADE,
-    KhoiID INT NOT NULL FOREIGN KEY REFERENCES Khoi(KhoiID) ON DELETE CASCADE,
-    PRIMARY KEY (MonHocID, KhoiID)
-);
-
--- 10. Bảng DiemThi
-CREATE TABLE DiemThi (
-    DiemThiID INT IDENTITY(1,1) PRIMARY KEY,
-    HocSinhID INT NOT NULL FOREIGN KEY REFERENCES HocSinh(HocSinhID) ON DELETE CASCADE,
-    ThoiGianID INT NOT NULL FOREIGN KEY REFERENCES ThoiGian(ThoiGianID),
-    MonHocID INT NOT NULL FOREIGN KEY REFERENCES MonHoc(MonHocID),
-    DiemMieng DECIMAL(4,2) NULL,
-    DiemGiuaKy DECIMAL(4,2) NULL,
-    DiemCuoiKy DECIMAL(4,2) NULL,
-    NgayCapNhat DATETIME DEFAULT GETDATE()
-);
-
--- 11. Bảng HocBa
-CREATE TABLE HocBa (
-    HocBaID INT IDENTITY(1,1) PRIMARY KEY,
-    HocSinhID INT NOT NULL FOREIGN KEY REFERENCES HocSinh(HocSinhID) ON DELETE CASCADE,
-    LopID INT NOT NULL FOREIGN KEY REFERENCES Lop(LopID),
-    NhanXet NVARCHAR(MAX) NULL,
-    DoLenLop BIT DEFAULT 1,
-    NgayTao DATETIME DEFAULT GETDATE()
-);
-
--- 12. Bảng Thu
-CREATE TABLE Thu (
-    ThuID INT IDENTITY(1,1) PRIMARY KEY,
-    TenThu NVARCHAR(10) NOT NULL,
-    ThuTu TINYINT NOT NULL
-);
-
--- 13. Bảng TietHoc
-CREATE TABLE TietHoc (
-    TietHocID INT IDENTITY(1,1) PRIMARY KEY,
-    TenTiet NVARCHAR(20) NOT NULL,
-    TietSo TINYINT NOT NULL
-);
-
--- 14. Bảng ThoiKhoaBieu
-CREATE TABLE ThoiKhoaBieu (
-    ThoiKhoaBieuID INT IDENTITY(1,1) PRIMARY KEY,
-    LopID INT NOT NULL FOREIGN KEY REFERENCES Lop(LopID) ON DELETE CASCADE,
-    ThuID INT NOT NULL FOREIGN KEY REFERENCES Thu(ThuID),
-    TietHocID INT NOT NULL FOREIGN KEY REFERENCES TietHoc(TietHocID),
-    MonHocID INT NOT NULL FOREIGN KEY REFERENCES MonHoc(MonHocID),
-    GiaoVienID INT NULL FOREIGN KEY REFERENCES GiaoVien(GiaoVienID),
-    GhiChu NVARCHAR(200) NULL
-);
+USE master;
+GO
+IF DB_ID(N'PriSchool') IS NULL
+BEGIN
+    CREATE DATABASE [PriSchool];
+END
+GO
+USE [PriSchool];
 GO
 
--- =========================================================
--- KHỞI TẠO DỮ LIỆU MẪU (DÙNG TOÀN BỘ MẬT KHẨU CHUỖI THÔ '123')
--- =========================================================
-
-SET IDENTITY_INSERT TaiKhoan ON;
-INSERT INTO TaiKhoan (TaiKhoanID, TenDangNhap, MatKhau, VaiTro, IsActive) VALUES
-(1, 'canbo_dung', '123', 'CanBo', 1),   -- Tài khoản cán bộ điều hành chính
-(2, 'canbo_lan', '123', 'CanBo', 1),    -- Cán bộ giáo vụ phụ trợ
-(3, 'giaovien_an', '123', 'GiaoVien', 1), 
-(4, 'giaovien_binh', '123', 'GiaoVien', 1);
-SET IDENTITY_INSERT TaiKhoan OFF;
-
-SET IDENTITY_INSERT CanBo ON;
-INSERT INTO CanBo (CanBoID, TaiKhoanID, HoTen, ChucVu, IsActive) VALUES
-(1, 1, N'Nguyễn Tiến Dũng', N'Trưởng phòng Đào tạo', 1),
-(2, 2, N'Phạm Thị Lan', N'Cán bộ Giáo vụ', 1);
-SET IDENTITY_INSERT CanBo OFF;
-
-SET IDENTITY_INSERT GiaoVien ON;
-INSERT INTO GiaoVien (GiaoVienID, TaiKhoanID, HoTen, NgaySinh, SoDienThoai, DiaChi, AnhDaiDien, IsActive) VALUES
-(1, 3, N'Nguyễn Văn An', '1985-04-12', '0912345678', N'Hà Nội', 'an_gv.png', 1),
-(2, 4, N'Trần Thị Bình', '1990-08-23', '0987654321', N'Hà Tĩnh', 'binh_gv.png', 1),
-(3, NULL, N'Lê Văn Cường', '1988-11-05', '0905123456', N'Đà Nẵng', NULL, 1);
-SET IDENTITY_INSERT GiaoVien OFF;
-
-SET IDENTITY_INSERT HocSinh ON;
-INSERT INTO HocSinh (HocSinhID, TenHocSinh, NgaySinh, GioiTinh, DiaChi, AnhDaiDien, IsActive) VALUES
-(1, N'Nguyễn Gia Bảo', '2019-03-15', N'Nam', N'Hà Nội', 'bao_hs.png', 1),
-(2, N'Lê Minh Anh', '2019-07-22', N'Nữ', N'Hà Tĩnh', 'anh_hs.png', 1),
-(3, N'Trần Tiến Đạt', '2018-05-10', N'Nam', N'Nghệ An', NULL, 1);
-SET IDENTITY_INSERT HocSinh OFF;
-
-SET IDENTITY_INSERT Khoi ON;
-INSERT INTO Khoi (KhoiID, TenKhoi) VALUES (1, N'Khối 1'), (2, N'Khối 2'), (3, N'Khối 3');
-SET IDENTITY_INSERT Khoi OFF;
-
-SET IDENTITY_INSERT ThoiGian ON;
-INSERT INTO ThoiGian (ThoiGianID, TenNam, TenKy, IsCurrent, NgayBatDau, NgayKetThuc) VALUES
-(1, '2025-2026', N'Học kỳ 1', 0, '2025-09-05', '2026-01-15'),
-(2, '2025-2026', N'Học kỳ 2', 1, '2026-01-16', '2026-05-25');
-SET IDENTITY_INSERT ThoiGian OFF;
-
-SET IDENTITY_INSERT Lop ON;
-INSERT INTO Lop (LopID, KhoiID, TenLop, ThoiGianID, GiaoVienID) VALUES
-(1, 1, '1A', 2, 1),
-(2, 1, '1B', 2, 2);
-SET IDENTITY_INSERT Lop OFF;
-
-SET IDENTITY_INSERT Thu ON;
-INSERT INTO Thu (ThuID, TenThu, ThuTu) VALUES
-(1, N'Thứ Hai', 2), (2, N'Thứ Ba', 3), (3, N'Thứ Tư', 4);
-SET IDENTITY_INSERT Thu OFF;
-
-SET IDENTITY_INSERT TietHoc ON;
-INSERT INTO TietHoc (TietHocID, TenTiet, TietSo) VALUES
-(1, N'Tiết 1 (Sáng)', 1), (2, N'Tiết 2 (Sáng)', 2);
-SET IDENTITY_INSERT TietHoc OFF;
-
-DBCC CHECKIDENT ('MonHoc', RESEED, 0);
+-- Xóa bảng cũ để seed lại dữ liệu sạch.
+IF OBJECT_ID(N'dbo.HocBa', N'U') IS NOT NULL DROP TABLE dbo.[HocBa];
+IF OBJECT_ID(N'dbo.ThoiKhoaBieu', N'U') IS NOT NULL DROP TABLE dbo.[ThoiKhoaBieu];
+IF OBJECT_ID(N'dbo.Lop', N'U') IS NOT NULL DROP TABLE dbo.[Lop];
+IF OBJECT_ID(N'dbo.GiaoVien', N'U') IS NOT NULL DROP TABLE dbo.[GiaoVien];
+IF OBJECT_ID(N'dbo.DiemThi', N'U') IS NOT NULL DROP TABLE dbo.[DiemThi];
+IF OBJECT_ID(N'dbo.CanBo', N'U') IS NOT NULL DROP TABLE dbo.[CanBo];
+IF OBJECT_ID(N'dbo.TietHoc', N'U') IS NOT NULL DROP TABLE dbo.[TietHoc];
+IF OBJECT_ID(N'dbo.Thu', N'U') IS NOT NULL DROP TABLE dbo.[Thu];
+IF OBJECT_ID(N'dbo.ThoiGian', N'U') IS NOT NULL DROP TABLE dbo.[ThoiGian];
+IF OBJECT_ID(N'dbo.TaiKhoan', N'U') IS NOT NULL DROP TABLE dbo.[TaiKhoan];
+IF OBJECT_ID(N'dbo.MonHoc_Khoi', N'U') IS NOT NULL DROP TABLE dbo.[MonHoc_Khoi];
+IF OBJECT_ID(N'dbo.MonHoc', N'U') IS NOT NULL DROP TABLE dbo.[MonHoc];
+IF OBJECT_ID(N'dbo.Khoi', N'U') IS NOT NULL DROP TABLE dbo.[Khoi];
+IF OBJECT_ID(N'dbo.HocSinh', N'U') IS NOT NULL DROP TABLE dbo.[HocSinh];
 GO
 
--- =======================================================
--- BƯỚC 2: TẠO DỮ LIỆU BẢNG CHA (MonHoc) TRƯỚC
--- =======================================================
-SET IDENTITY_INSERT MonHoc ON;
-INSERT INTO MonHoc (MonHocID, TenMonHoc, SoTiet, MoTa, IsActive) VALUES
-(1, N'Tiếng Việt', 10, N'Môn học rèn luyện kỹ năng đọc, viết, nghe, nói', 1),
-(2, N'Toán', 5, N'Môn học phát triển tư duy logic và tính toán', 1),
-(3, N'Ngoại ngữ 1 (Tiếng Anh)', 4, N'Tiếng Anh giao tiếp cơ bản cấp tiểu học', 1),
-(4, N'Đạo đức', 1, N'Giáo dục nhân cách, lối sống ứng xử', 1),
-(5, N'Tự nhiên và Xã hội', 2, N'Khám phá thế giới xung quanh dành cho Khối 1, 2, 3', 1),
-(6, N'Khoa học', 2, N'Kiến thức khoa học cơ bản dành cho Khối 4, 5', 1),
-(7, N'Lịch sử và Địa lí', 2, N'Kiến thức lịch sử, địa lý Việt Nam dành cho Khối 4, 5', 1),
-(8, N'Tin học', 1, N'Kỹ năng sử dụng máy tính và tư duy máy tính cơ bản', 1),
-(9, N'Giáo dục thể chất', 2, N'Rèn luyện sức khỏe, thể dục thể thao', 1),
-(10, N'Âm nhạc', 1, N'Giáo dục thẩm mỹ và năng khiếu âm nhạc', 1),
-(11, N'Mĩ thuật', 1, N'Giáo dục thẩm mỹ và năng khiếu hội họa', 1),
-(12, N'Hoạt động trải nghiệm', 3, N'Hoạt động ngoại khóa, rèn luyện kỹ năng sống', 1);
-SET IDENTITY_INSERT MonHoc OFF;
+CREATE TABLE dbo.[HocSinh] (
+    [HocSinhID] INT IDENTITY(1,1) NOT NULL,
+    [TenHocSinh] NVARCHAR(100) NOT NULL,
+    [NgaySinh] DATE NOT NULL,
+    [GioiTinh] NVARCHAR(10) NOT NULL,
+    [DiaChi] NVARCHAR(200) NULL,
+    [AnhDaiDien] VARCHAR(255) NULL,
+    [IsActive] BIT NULL DEFAULT ((1)),
+    [NgayTao] DATETIME NULL DEFAULT (getdate()),
+    [LopID] INT NULL
+);
+GO
+ALTER TABLE dbo.[HocSinh] ADD CONSTRAINT [PK__HocSinh__CD0A97BF5F48DC72] PRIMARY KEY ([HocSinhID]);
 GO
 
--- =======================================================
--- BƯỚC 3: TẠO DỮ LIỆU CÁC BẢNG CON (MonHoc_Khoi, DiemThi, ThoiKhoaBieu)
--- =======================================================
+CREATE TABLE dbo.[Khoi] (
+    [KhoiID] INT IDENTITY(1,1) NOT NULL,
+    [TenKhoi] NVARCHAR(45) NOT NULL
+);
+GO
+ALTER TABLE dbo.[Khoi] ADD CONSTRAINT [PK__Khoi__40ED7F70AF9BD9AC] PRIMARY KEY ([KhoiID]);
+GO
 
--- 3.1 Thêm phân bổ môn học cho khối
-INSERT INTO MonHoc_Khoi (MonHocID, KhoiID) VALUES 
-(1, 1), (2, 1), (4, 1), (5, 1),
-(1, 2), (2, 2), (4, 2), (5, 2),
-(1, 3), (2, 3), (3, 3), (5, 3);
+CREATE TABLE dbo.[MonHoc] (
+    [MonHocID] INT IDENTITY(1,1) NOT NULL,
+    [TenMonHoc] NVARCHAR(100) NOT NULL,
+    [SoTiet] TINYINT NOT NULL,
+    [MoTa] NVARCHAR(200) NULL,
+    [IsActive] BIT NULL DEFAULT ((1)),
+    [NgayTao] DATETIME NULL DEFAULT (getdate()),
+    [NgayCapNhat] DATETIME NULL DEFAULT (getdate())
+);
+GO
+ALTER TABLE dbo.[MonHoc] ADD CONSTRAINT [PK__MonHoc__32C3DE9D9519742B] PRIMARY KEY ([MonHocID]);
+GO
 
--- 3.2 Thêm Điểm thi mẫu
-SET IDENTITY_INSERT DiemThi ON;
-INSERT INTO DiemThi (DiemThiID, HocSinhID, ThoiGianID, MonHocID, DiemMieng, DiemGiuaKy, DiemCuoiKy) VALUES
-(1, 1, 2, 1, 9.00, 8.50, 9.00),
-(2, 1, 2, 2, 10.00, 9.50, 10.00),
-(3, 2, 2, 1, 8.00, 7.50, 8.00),
-(4, 2, 2, 2, 8.50, 9.00, 8.50),
-(5, 3, 2, 3, 7.00, 8.00, 8.50);
-SET IDENTITY_INSERT DiemThi OFF;
+CREATE TABLE dbo.[MonHoc_Khoi] (
+    [MonHocID] INT NOT NULL,
+    [KhoiID] INT NOT NULL
+);
+GO
+ALTER TABLE dbo.[MonHoc_Khoi] ADD CONSTRAINT [PK__MonHoc_K__26CD096A4929C1CA] PRIMARY KEY ([MonHocID], [KhoiID]);
+GO
 
--- 3.3 Thêm Thời khóa biểu mẫu
-SET IDENTITY_INSERT ThoiKhoaBieu ON;
-INSERT INTO ThoiKhoaBieu (ThoiKhoaBieuID, LopID, ThuID, TietHocID, MonHocID, GiaoVienID, GhiChu) VALUES
-(1, 1, 1, 1, 2, 1, N'Toán - Phòng 101'),
-(2, 1, 1, 2, 1, 1, N'Tiếng Việt - Phòng 101'),
-(3, 1, 2, 1, 4, 1, N'Đạo đức - Phòng 101'),
+CREATE TABLE dbo.[TaiKhoan] (
+    [TaiKhoanID] INT IDENTITY(1,1) NOT NULL,
+    [TenDangNhap] VARCHAR(35) NOT NULL,
+    [MatKhau] VARCHAR(255) NOT NULL,
+    [VaiTro] VARCHAR(20) NOT NULL,
+    [IsActive] BIT NULL DEFAULT ((1)),
+    [NgayTao] DATETIME NULL DEFAULT (getdate()),
+    [NgayCapNhat] DATETIME NULL DEFAULT (getdate())
+);
+GO
+ALTER TABLE dbo.[TaiKhoan] ADD CONSTRAINT [PK__TaiKhoan__9A124B65991789C9] PRIMARY KEY ([TaiKhoanID]);
+GO
+
+CREATE TABLE dbo.[ThoiGian] (
+    [ThoiGianID] INT IDENTITY(1,1) NOT NULL,
+    [TenNam] VARCHAR(20) NOT NULL,
+    [TenKy] NVARCHAR(20) NOT NULL,
+    [IsCurrent] BIT NULL DEFAULT ((0)),
+    [NgayBatDau] DATE NULL,
+    [NgayKetThuc] DATE NULL
+);
+GO
+ALTER TABLE dbo.[ThoiGian] ADD CONSTRAINT [PK__ThoiGian__1812611F9CE7D364] PRIMARY KEY ([ThoiGianID]);
+GO
+
+CREATE TABLE dbo.[Thu] (
+    [ThuID] INT IDENTITY(1,1) NOT NULL,
+    [TenThu] NVARCHAR(10) NOT NULL,
+    [ThuTu] TINYINT NOT NULL
+);
+GO
+ALTER TABLE dbo.[Thu] ADD CONSTRAINT [PK__Thu__2E286B1A23900CAC] PRIMARY KEY ([ThuID]);
+GO
+
+CREATE TABLE dbo.[TietHoc] (
+    [TietHocID] INT IDENTITY(1,1) NOT NULL,
+    [TenTiet] NVARCHAR(20) NOT NULL,
+    [TietSo] TINYINT NOT NULL
+);
+GO
+ALTER TABLE dbo.[TietHoc] ADD CONSTRAINT [PK__TietHoc__DF975C828CCC534E] PRIMARY KEY ([TietHocID]);
+GO
+
+CREATE TABLE dbo.[CanBo] (
+    [CanBoID] INT IDENTITY(1,1) NOT NULL,
+    [TaiKhoanID] INT NULL,
+    [HoTen] NVARCHAR(100) NOT NULL,
+    [NgaySinh] DATE NULL,
+    [SoDienThoai] VARCHAR(20) NULL,
+    [ChucVu] NVARCHAR(100) NULL,
+    [IsActive] BIT NULL DEFAULT ((1)),
+    [NgayTao] DATETIME NULL DEFAULT (getdate()),
+    [NgayCapNhat] DATETIME NULL DEFAULT (getdate())
+);
+GO
+ALTER TABLE dbo.[CanBo] ADD CONSTRAINT [PK__CanBo__AC5D563E7CB60EDA] PRIMARY KEY ([CanBoID]);
+GO
+
+CREATE TABLE dbo.[DiemThi] (
+    [DiemThiID] INT IDENTITY(1,1) NOT NULL,
+    [HocSinhID] INT NOT NULL,
+    [ThoiGianID] INT NOT NULL,
+    [MonHocID] INT NOT NULL,
+    [DiemMieng] DECIMAL(4,2) NULL,
+    [DiemGiuaKy] DECIMAL(4,2) NULL,
+    [DiemCuoiKy] DECIMAL(4,2) NULL,
+    [NgayCapNhat] DATETIME NULL DEFAULT (getdate())
+);
+GO
+ALTER TABLE dbo.[DiemThi] ADD CONSTRAINT [PK__DiemThi__93D3C0E683877C92] PRIMARY KEY ([DiemThiID]);
+GO
+
+CREATE TABLE dbo.[GiaoVien] (
+    [GiaoVienID] INT IDENTITY(1,1) NOT NULL,
+    [TaiKhoanID] INT NULL,
+    [HoTen] NVARCHAR(100) NOT NULL,
+    [NgaySinh] DATE NULL,
+    [SoDienThoai] VARCHAR(20) NULL,
+    [DiaChi] NVARCHAR(200) NULL,
+    [AnhDaiDien] VARCHAR(255) NULL,
+    [IsActive] BIT NULL DEFAULT ((1)),
+    [NgayTao] DATETIME NULL DEFAULT (getdate()),
+    [NgayCapNhat] DATETIME NULL DEFAULT (getdate())
+);
+GO
+ALTER TABLE dbo.[GiaoVien] ADD CONSTRAINT [PK__GiaoVien__7D9E9838F38AC9CB] PRIMARY KEY ([GiaoVienID]);
+GO
+
+CREATE TABLE dbo.[Lop] (
+    [LopID] INT IDENTITY(1,1) NOT NULL,
+    [KhoiID] INT NOT NULL,
+    [TenLop] VARCHAR(10) NOT NULL,
+    [ThoiGianID] INT NOT NULL,
+    [GiaoVienID] INT NULL,
+    [NgayTao] DATETIME NULL DEFAULT (getdate())
+);
+GO
+ALTER TABLE dbo.[Lop] ADD CONSTRAINT [PK__Lop__40585DCB20AF3B8D] PRIMARY KEY ([LopID]);
+GO
+
+CREATE TABLE dbo.[ThoiKhoaBieu] (
+    [ThoiKhoaBieuID] INT IDENTITY(1,1) NOT NULL,
+    [LopID] INT NOT NULL,
+    [ThuID] INT NOT NULL,
+    [TietHocID] INT NOT NULL,
+    [MonHocID] INT NOT NULL,
+    [GiaoVienID] INT NULL,
+    [GhiChu] NVARCHAR(200) NULL
+);
+GO
+ALTER TABLE dbo.[ThoiKhoaBieu] ADD CONSTRAINT [PK__ThoiKhoa__98580A96F44E1D1F] PRIMARY KEY ([ThoiKhoaBieuID]);
+GO
+
+CREATE TABLE dbo.[HocBa] (
+    [HocBaID] INT IDENTITY(1,1) NOT NULL,
+    [HocSinhID] INT NOT NULL,
+    [LopID] INT NOT NULL,
+    [NhanXet] NVARCHAR(MAX) NULL,
+    [DoLenLop] BIT NULL DEFAULT ((1)),
+    [NgayTao] DATETIME NULL DEFAULT (getdate())
+);
+GO
+ALTER TABLE dbo.[HocBa] ADD CONSTRAINT [PK__HocBa__77CF0A859FF864AA] PRIMARY KEY ([HocBaID]);
+GO
+
+-- Dữ liệu bảng HocSinh
+SET IDENTITY_INSERT dbo.[HocSinh] ON;
+INSERT INTO dbo.[HocSinh] ([HocSinhID], [TenHocSinh], [NgaySinh], [GioiTinh], [DiaChi], [AnhDaiDien], [IsActive], [NgayTao], [LopID]) VALUES
+(1, N'Nguyễn Gia Bảo', '2019-03-15', N'Nam', N'Hà Nội', N'bao_hs.png', 1, '2026-06-17 15:33:38', 4006),
+(2, N'Lê Minh Anh', '2019-07-22', N'Nữ', N'Hà Tĩnh', N'anh_hs.png', 1, '2026-06-17 15:33:38', NULL),
+(3, N'Trần Tiến Đạt', '2018-05-10', N'Nam', N'Nghệ An', NULL, 1, '2026-06-17 15:33:38', NULL),
+(4, N'Nguyễn Thị Thương', '2005-02-07', N'Nữ', N'Hà Tĩnh', N'1781731973992-z7379674008561_1d946c8c37d54dfb6984ea50791cd314.jpeg', 1, '2026-06-17 21:21:20', NULL),
+(5, N'Bùi Thị Bích Ngọc', '2005-09-22', N'Nữ', N'Thái Bình', N'1781732042969-z7379600863145_e303cc90f89cde328e844ddefa9c9fef.jpeg', 1, '2026-06-17 21:34:08', NULL),
+(6, N'Phan Thị Thanh Thảo', '2005-01-04', N'Nữ', N'Nam Đinh', N'', 1, '2026-06-17 21:47:03', 4003),
+(7, N'Nguyễn Thị Tú Phương', '2005-04-12', N'Nữ', N'Hà Nội', N'1781732857414-8e7e9bb7-097d-4b80-9a94-b1852a822087.jpeg', 1, '2026-06-17 21:47:39', 4003),
+(8, N'Nguyễn Ngọc Ánh ', '2004-02-22', N'Nữ', N'Lạng Sơn', N'1781732907811-hii-nh-ai-nh.png', 1, '2026-06-17 21:48:30', 4003),
+(1004, N'Phạm Viết Quang', '1005-03-18', N'Nam', N'Hà Tĩnh', N'1782180581365-875f9b99957b763c92d56ae4559a2b85.jpg', 1, '2026-06-23 02:09:43', NULL),
+(1005, N'Phan Thị Trà Giang', '2005-09-12', N'Nữ', N'Đà Lạt', N'1782180624511-z5618366594850_81cf9230e39d1e428c6f97f63f276a42.jpg', 1, '2026-06-23 02:10:27', NULL),
+(1006, N'Nguyễn Thị Khánh Huyền', '2006-09-20', N'Nữ', N'Nam Đinh', N'1782180659871-cover.png', 1, '2026-06-23 02:11:01', NULL),
+(1007, N'Nguyễn Khắc Quân', '2003-09-12', N'Nam', N'Hà Giang', N'1782180697131-giaodienapp.jpg', 1, '2026-06-23 02:11:38', NULL),
+(1008, N'Nguyễn Hoàng Hà', '2007-02-11', N'Nam', N'Thanh Hoá', N'1782181429571-cover.jpg', 1, '2026-06-23 02:23:50', 4006),
+(2004, N'Nguyễn Thị Mai', '2019-01-15', N'Nữ', N'Hà Nội', N'girl1.jpg', 1, '2026-06-30 05:15:11', 4004),
+(2005, N'Trần Thị Lan', '2019-03-22', N'Nữ', N'Hà Tĩnh', N'girl2.jpg', 1, '2026-06-30 05:15:11', 4004),
+(2006, N'Lê Thị Hương', '2018-11-08', N'Nữ', N'Nghệ An', N'girl3.jpg', 1, '2026-06-30 05:15:11', 4004),
+(2007, N'Phạm Thị Ngọc', '2019-05-12', N'Nữ', N'Hà Nam', N'girl4.jpg', 1, '2026-06-30 05:15:11', 4005),
+(2008, N'Hoàng Thị Linh', '2018-09-25', N'Nữ', N'Thanh Hóa', N'girl5.jpg', 1, '2026-06-30 05:15:11', 4005),
+(2009, N'Đặng Thị Thu', '2019-02-18', N'Nữ', N'Nam Định', N'girl6.jpg', 1, '2026-06-30 05:15:11', 4005),
+(2010, N'Bùi Thị Quỳnh', '2019-06-10', N'Nữ', N'Hải Phòng', N'girl7.jpg', 1, '2026-06-30 05:15:11', 4006),
+(2011, N'Ngô Thị Vân', '2018-12-01', N'Nữ', N'Hà Nội', N'girl8.jpg', 1, '2026-06-30 05:15:11', 4006),
+(2012, N'Vũ Thị Hạnh', '2019-04-14', N'Nữ', N'Hải Dương', N'girl9.jpg', 1, '2026-06-30 05:15:11', 4006),
+(2013, N'Dương Thị Nhung', '2019-07-20', N'Nữ', N'Hưng Yên', N'girl10.jpg', 1, '2026-06-30 05:15:11', 4006),
+(2014, N'Đỗ Thị Trang', '2018-10-05', N'Nữ', N'Bắc Ninh', N'girl11.jpg', 1, '2026-06-30 05:15:11', 4006),
+(2015, N'Nguyễn Thị Yến', '2019-01-30', N'Nữ', N'Quảng Ninh', N'girl12.jpg', 1, '2026-06-30 05:15:11', 3004),
+(2016, N'Trịnh Thị Ánh', '2019-08-11', N'Nữ', N'Lào Cai', N'girl13.jpg', 1, '2026-06-30 05:15:11', 3004),
+(2017, N'Lý Thị Hoa', '2018-07-19', N'Nữ', N'Sơn La', N'girl14.jpg', 1, '2026-06-30 05:15:11', 4006),
+(2018, N'Cao Thị Thảo', '2019-09-09', N'Nữ', N'Yên Bái', N'girl15.jpg', 1, '2026-06-30 05:15:11', 4006),
+(2019, N'Phan Thị Vy', '2018-08-22', N'Nữ', N'Hà Giang', N'girl16.jpg', 1, '2026-06-30 05:15:11', 3005),
+(2020, N'Mai Thị Kim', '2019-02-07', N'Nữ', N'Tuyên Quang', N'girl17.jpg', 1, '2026-06-30 05:15:11', 3005),
+(2021, N'Tạ Thị Hồng', '2019-05-29', N'Nữ', N'Phú Thọ', N'girl18.jpg', 1, '2026-06-30 05:15:11', 3005),
+(2022, N'Chu Thị Ngân', '2018-11-16', N'Nữ', N'Vĩnh Phúc', N'girl19.jpg', 1, '2026-06-30 05:15:11', 3006),
+(2023, N'Đinh Thị Phương', '2019-04-03', N'Nữ', N'Hà Nội', N'girl20.jpg', 1, '2026-06-30 05:15:11', 3006);
+SET IDENTITY_INSERT dbo.[HocSinh] OFF;
+GO
+
+-- Dữ liệu bảng Khoi
+SET IDENTITY_INSERT dbo.[Khoi] ON;
+INSERT INTO dbo.[Khoi] ([KhoiID], [TenKhoi]) VALUES
+(1, N'Khối 1'),
+(2, N'Khối 2'),
+(3, N'Khối 3'),
+(4, N'Khối 4'),
+(5, N'Khối 5');
+SET IDENTITY_INSERT dbo.[Khoi] OFF;
+GO
+
+-- Dữ liệu bảng MonHoc
+SET IDENTITY_INSERT dbo.[MonHoc] ON;
+INSERT INTO dbo.[MonHoc] ([MonHocID], [TenMonHoc], [SoTiet], [MoTa], [IsActive], [NgayTao], [NgayCapNhat]) VALUES
+(1, N'Tiếng Việt', 10, N'Môn học rèn luyện kỹ năng đọc, viết, nghe, nói', 1, '2026-06-17 15:34:23', '2026-06-17 15:34:23'),
+(2, N'Toán', 5, N'Môn học phát triển tư duy logic và tính toán', 1, '2026-06-17 15:34:23', '2026-06-17 15:34:23'),
+(3, N'Ngoại ngữ 1 (Tiếng Anh)', 4, N'Tiếng Anh giao tiếp cơ bản cấp tiểu học', 1, '2026-06-17 15:34:23', '2026-06-17 15:34:23'),
+(4, N'Đạo đức', 1, N'Giáo dục nhân cách, lối sống ứng xử', 1, '2026-06-17 15:34:23', '2026-06-17 15:34:23'),
+(5, N'Tự nhiên và Xã hội', 2, N'Khám phá thế giới xung quanh dành cho Khối 1, 2, 3', 1, '2026-06-17 15:34:23', '2026-06-17 15:34:23'),
+(6, N'Khoa học', 2, N'Kiến thức khoa học cơ bản dành cho Khối 4, 5', 1, '2026-06-17 15:34:23', '2026-06-17 15:34:23'),
+(7, N'Lịch sử và Địa lí', 2, N'Kiến thức lịch sử, địa lý Việt Nam dành cho Khối 4, 5', 1, '2026-06-17 15:34:23', '2026-06-17 15:34:23'),
+(8, N'Tin học', 1, N'Kỹ năng sử dụng máy tính và tư duy máy tính cơ bản', 1, '2026-06-17 15:34:23', '2026-06-17 15:34:23'),
+(9, N'Giáo dục thể chất', 2, N'Rèn luyện sức khỏe, thể dục thể thao', 1, '2026-06-17 15:34:23', '2026-06-17 15:34:23'),
+(10, N'Âm nhạc', 1, N'Giáo dục thẩm mỹ và năng khiếu âm nhạc', 1, '2026-06-17 15:34:23', '2026-06-17 15:34:23'),
+(11, N'Mĩ thuật', 1, N'Giáo dục thẩm mỹ và năng khiếu hội họa', 1, '2026-06-17 15:34:23', '2026-06-17 15:34:23'),
+(12, N'Hoạt động trải nghiệm', 3, N'Hoạt động ngoại khóa, rèn luyện kỹ năng sống', 1, '2026-06-17 15:34:23', '2026-06-17 15:34:23');
+SET IDENTITY_INSERT dbo.[MonHoc] OFF;
+GO
+
+-- Dữ liệu bảng MonHoc_Khoi
+INSERT INTO dbo.[MonHoc_Khoi] ([MonHocID], [KhoiID]) VALUES
+(1, 1),
+(1, 2),
+(1, 3),
+(2, 1),
+(2, 2),
+(2, 3),
+(3, 3),
+(4, 1),
+(4, 2),
+(5, 1),
+(5, 2),
+(5, 3);
+GO
+
+-- Dữ liệu bảng TaiKhoan
+SET IDENTITY_INSERT dbo.[TaiKhoan] ON;
+INSERT INTO dbo.[TaiKhoan] ([TaiKhoanID], [TenDangNhap], [MatKhau], [VaiTro], [IsActive], [NgayTao], [NgayCapNhat]) VALUES
+(1, N'canbo_dung', N'123', N'CanBo', 1, '2026-06-17 15:33:23', '2026-06-17 15:33:23'),
+(2, N'canbo_lan', N'123', N'CanBo', 1, '2026-06-17 15:33:23', '2026-06-17 15:33:23'),
+(3, N'giaovien_an', N'123', N'GiaoVien', 1, '2026-06-17 15:33:23', '2026-06-17 15:33:23'),
+(4, N'giaovien_binh', N'123', N'GiaoVien', 1, '2026-06-17 15:33:23', '2026-06-17 15:33:23'),
+(5, N'thuong', N'07022005', N'CanBo', 1, '2026-06-17 16:37:27', '2026-06-17 16:37:27'),
+(6, N'Võ Th? Thông', N'123', N'GiaoVien', 1, '2026-06-17 21:45:49', '2026-06-17 21:45:49'),
+(1001, N'Nguy?n H?u Cu?ng', N'123', N'GiaoVien', 1, '2026-06-30 04:18:59', '2026-06-30 04:18:59');
+SET IDENTITY_INSERT dbo.[TaiKhoan] OFF;
+GO
+
+-- Dữ liệu bảng ThoiGian
+SET IDENTITY_INSERT dbo.[ThoiGian] ON;
+INSERT INTO dbo.[ThoiGian] ([ThoiGianID], [TenNam], [TenKy], [IsCurrent], [NgayBatDau], [NgayKetThuc]) VALUES
+(1, N'2025-2026', N'Học kỳ 1', 0, '2025-09-05', '2026-01-15'),
+(2, N'2025-2026', N'Học kỳ 2', 0, '2026-01-16', '2026-05-25'),
+(1001, N'2026-2027', N'Học kỳ 1', 0, '2026-09-05', '2027-01-15'),
+(1002, N'2026-2027', N'Học kỳ 2', 0, '2027-01-16', '2027-05-25'),
+(1003, N'2027-2028', N'Học kỳ 1', 0, '2027-09-05', '2028-01-15'),
+(1004, N'2027-2028', N'Học kỳ 2', 0, '2028-01-16', '2028-05-25'),
+(2001, N'2028-2029', N'Học kỳ 1', 0, '2028-09-05', '2029-01-15'),
+(2002, N'2028-2029', N'Học kỳ 2', 0, '2029-01-16', '2029-05-25'),
+(3001, N'2029-2030', N'Học kỳ 1', 1, '2029-09-05', '2030-01-15'),
+(3002, N'2029-2030', N'Học kỳ 2', 0, '2030-01-16', '2030-05-25'),
+(3003, N'2030-2031', N'Học kỳ 1', 0, '2030-09-05', '2031-01-15'),
+(3004, N'2030-2031', N'Học kỳ 2', 0, '2031-01-16', '2031-05-25');
+SET IDENTITY_INSERT dbo.[ThoiGian] OFF;
+GO
+
+-- Dữ liệu bảng Thu
+SET IDENTITY_INSERT dbo.[Thu] ON;
+INSERT INTO dbo.[Thu] ([ThuID], [TenThu], [ThuTu]) VALUES
+(1, N'Thứ Hai', 2),
+(2, N'Thứ Ba', 3),
+(3, N'Thứ Tư', 4),
+(4, N'Thứ Năm', 5),
+(5, N'Thứ Sáu', 6);
+SET IDENTITY_INSERT dbo.[Thu] OFF;
+GO
+
+-- Dữ liệu bảng TietHoc
+SET IDENTITY_INSERT dbo.[TietHoc] ON;
+INSERT INTO dbo.[TietHoc] ([TietHocID], [TenTiet], [TietSo]) VALUES
+(1, N'Tiết 1 (Sáng)', 1),
+(2, N'Tiết 2 (Sáng)', 2),
+(3, N'Tiết 3 (Sáng)', 3),
+(4, N'Tiết 4 (Sáng)', 4),
+(5, N'Tiết 5 (Sáng)', 5),
+(6, N'Tiết 6 (Chiều)', 6),
+(7, N'Tiết 7 (Chiều)', 7),
+(8, N'Tiết 8 (Chiều)', 8);
+SET IDENTITY_INSERT dbo.[TietHoc] OFF;
+GO
+
+-- Dữ liệu bảng CanBo
+SET IDENTITY_INSERT dbo.[CanBo] ON;
+INSERT INTO dbo.[CanBo] ([CanBoID], [TaiKhoanID], [HoTen], [NgaySinh], [SoDienThoai], [ChucVu], [IsActive], [NgayTao], [NgayCapNhat]) VALUES
+(1, 1, N'Nguyễn Tiến Dũng', NULL, NULL, N'Trưởng phòng Đào tạo', 1, '2026-06-17 15:33:29', '2026-06-17 15:33:29'),
+(2, 2, N'Phạm Thị Lan', NULL, NULL, N'Cán bộ Giáo vụ', 1, '2026-06-17 15:33:29', '2026-06-17 15:33:29');
+SET IDENTITY_INSERT dbo.[CanBo] OFF;
+GO
+
+-- Dữ liệu bảng DiemThi
+SET IDENTITY_INSERT dbo.[DiemThi] ON;
+INSERT INTO dbo.[DiemThi] ([DiemThiID], [HocSinhID], [ThoiGianID], [MonHocID], [DiemMieng], [DiemGiuaKy], [DiemCuoiKy], [NgayCapNhat]) VALUES
+(1, 1, 2, 1, 9, 8.5, 9, '2026-06-23 03:06:48'),
+(2, 1, 2, 2, 10, 9.5, 10, '2026-06-23 03:07:13'),
+(3, 2, 2, 1, 8, 7.5, 8, '2026-06-23 03:06:48'),
+(4, 2, 2, 2, 8.5, 9, 8.5, '2026-06-23 03:07:13'),
+(5, 3, 2, 3, 7, 8, 8.5, '2026-06-23 03:06:41'),
+(1001, 2, 2, 4, 8, 8, 8, '2026-06-23 02:57:52'),
+(1002, 1, 2, 4, 8, 8, 8, '2026-06-23 02:57:52'),
+(1003, 3, 2, 4, 8, 8, 9, '2026-06-23 02:57:52'),
+(1004, 2, 2, 9, 9, 9, 9, '2026-06-23 03:04:57'),
+(1005, 1, 2, 9, 9, 9, 9, '2026-06-23 03:04:57'),
+(1006, 3, 2, 9, 9, 9, 9, '2026-06-23 03:04:57'),
+(1007, 2, 2, 10, 9, 9, 9, '2026-06-23 03:05:09'),
+(1008, 1, 2, 10, 9, 9, 9, '2026-06-23 03:05:09'),
+(1009, 3, 2, 10, 9, 9, 9, '2026-06-23 03:05:09'),
+(1010, 2, 2, 12, 9, 9, 9, '2026-06-23 03:05:28'),
+(1011, 1, 2, 12, 9, 9, 9, '2026-06-23 03:05:28'),
+(1012, 3, 2, 12, 9, 9, 9, '2026-06-23 03:05:28'),
+(1013, 2, 2, 6, 8, 8, 7, '2026-06-23 03:05:52'),
+(1014, 1, 2, 6, 8, 8, 9, '2026-06-23 03:05:52'),
+(1015, 3, 2, 6, 8, 8, 9, '2026-06-23 03:05:52'),
+(1016, 2, 2, 7, 9, 9, 9, '2026-06-23 03:06:07'),
+(1017, 1, 2, 7, 9, 9, 9, '2026-06-23 03:06:07'),
+(1018, 3, 2, 7, 9, 9, 9, '2026-06-23 03:06:07'),
+(1019, 2, 2, 11, 8, 8, 8, '2026-06-23 03:06:29'),
+(1020, 1, 2, 11, 8, 8, 8, '2026-06-23 03:06:29'),
+(1021, 3, 2, 11, 8, 8, 8, '2026-06-23 03:06:29'),
+(1022, 2, 2, 3, 7, 8, 9, '2026-06-23 03:06:41'),
+(1023, 1, 2, 3, 8, 9, 8, '2026-06-23 03:06:41'),
+(1024, 3, 2, 1, 9, 9, 9, '2026-06-23 03:06:48'),
+(1025, 2, 2, 8, 7, 7, 7, '2026-06-23 03:07:05'),
+(1026, 1, 2, 8, 7, 7.5, 7, '2026-06-23 03:07:05'),
+(1027, 3, 2, 8, 8, 8, 7, '2026-06-23 03:07:05'),
+(1028, 3, 2, 2, 9, 9, 9, '2026-06-23 03:07:13'),
+(1029, 2, 2, 5, 9, 9, 9.25, '2026-06-23 03:07:29'),
+(1030, 1, 2, 5, 9, 9.25, 9, '2026-06-23 03:07:29'),
+(1031, 3, 2, 5, 9, 9, 9, '2026-06-23 03:07:29'),
+(1032, 1005, 1001, 10, 8, 8, 8, '2026-06-23 09:09:55'),
+(2001, 8, 2001, 10, 7, 7, 8, '2026-06-30 04:56:28'),
+(2002, 7, 2001, 10, 8, 8, 8, '2026-06-30 04:56:28'),
+(2003, 6, 2001, 10, 8, 8, 8, '2026-06-30 04:56:28'),
+(2004, 8, 2001, 4, 8, 8, 8, '2026-06-30 05:03:42'),
+(2005, 7, 2001, 4, 8, 8, 8, '2026-06-30 05:03:42'),
+(2006, 6, 2001, 4, 8, 8, 8, '2026-06-30 05:03:42'),
+(2007, 8, 2001, 9, 8, 8, 8, '2026-06-30 05:03:53'),
+(2008, 7, 2001, 9, 8, 8, 8, '2026-06-30 05:03:53'),
+(2009, 6, 2001, 9, 8, 8, 8, '2026-06-30 05:03:53'),
+(2010, 8, 2001, 12, 9, 9, 9, '2026-06-30 05:04:04'),
+(2011, 7, 2001, 12, 9, 9, 9, '2026-06-30 05:04:04'),
+(2012, 6, 2001, 12, 9, 9, 9, '2026-06-30 05:04:04'),
+(2013, 8, 2001, 6, 9, 8, 8, '2026-06-30 05:04:20'),
+(2014, 7, 2001, 6, 8, 8, 8, '2026-06-30 05:04:20'),
+(2015, 6, 2001, 6, 8, 9, 9, '2026-06-30 05:04:20'),
+(2016, 8, 2001, 7, 9, 9, 9, '2026-06-30 05:04:30'),
+(2017, 7, 2001, 7, 9, 9, 9, '2026-06-30 05:04:30'),
+(2018, 6, 2001, 7, 9, 9, 9, '2026-06-30 05:04:30'),
+(2019, 8, 2001, 11, 8, 8, 8, '2026-06-30 05:04:40'),
+(2020, 7, 2001, 11, 8, 8, 8, '2026-06-30 05:04:40'),
+(2021, 6, 2001, 11, 8, 8, 8, '2026-06-30 05:04:40'),
+(2022, 8, 2001, 3, 9, 9, 9, '2026-06-30 05:04:51'),
+(2023, 7, 2001, 3, 9, 9, 9, '2026-06-30 05:04:51'),
+(2024, 6, 2001, 3, 9, 9, 9, '2026-06-30 05:04:51'),
+(2025, 8, 2001, 1, 8, 8, 8, '2026-06-30 05:05:02'),
+(2026, 7, 2001, 1, 8, 8, 8, '2026-06-30 05:05:02'),
+(2027, 6, 2001, 1, 8, 8, 8, '2026-06-30 05:05:02'),
+(2028, 8, 2001, 8, 8, 9, 9, '2026-06-30 05:05:15'),
+(2029, 7, 2001, 8, 9, 9, 8, '2026-06-30 05:05:15'),
+(2030, 6, 2001, 8, 8, 9, 9, '2026-06-30 05:05:15'),
+(2031, 8, 2001, 2, 7, 7, 7, '2026-06-30 05:05:28'),
+(2032, 7, 2001, 2, 8, 7, 6, '2026-06-30 05:05:28'),
+(2033, 6, 2001, 2, 8, 7, 6, '2026-06-30 05:05:28'),
+(2034, 8, 2001, 5, 8, 8, 8, '2026-06-30 05:05:43'),
+(2035, 7, 2001, 5, 8, 8, 8, '2026-06-30 05:05:43'),
+(2036, 6, 2001, 5, 8, 8, 8, '2026-06-30 05:05:43'),
+(2037, 2010, 2001, 10, 9, 9, 9, '2026-06-30 05:19:41'),
+(2038, 2018, 2001, 10, 8, 8, 8, '2026-06-30 05:19:41'),
+(2039, 2014, 2001, 10, 8, 8, 8, '2026-06-30 05:19:41'),
+(2040, 2013, 2001, 10, 8, 8, 8, '2026-06-30 05:19:41'),
+(2041, 2017, 2001, 10, 8, 8, 8, '2026-06-30 05:19:41'),
+(2042, 2011, 2001, 10, 8, 8, 8, '2026-06-30 05:19:41'),
+(2043, 1, 2001, 10, 8, 8, 8, '2026-06-30 05:19:41'),
+(2044, 1008, 2001, 10, 8, 8, 8, '2026-06-30 05:19:41'),
+(2045, 2012, 2001, 10, 8, 8, 8, '2026-06-30 05:19:41'),
+(2046, 2010, 2001, 4, 9, 9, 9, '2026-06-30 05:20:04'),
+(2047, 2018, 2001, 4, 9, 9, 9, '2026-06-30 05:20:04'),
+(2048, 2014, 2001, 4, 9, 9, 9, '2026-06-30 05:20:04'),
+(2049, 2013, 2001, 4, 9, 9, 9, '2026-06-30 05:20:04'),
+(2050, 2017, 2001, 4, 9, 9, 9, '2026-06-30 05:20:04'),
+(2051, 2011, 2001, 4, 9, 9, 9, '2026-06-30 05:20:04'),
+(2052, 1, 2001, 4, 9, 9, 9, '2026-06-30 05:20:04'),
+(2053, 1008, 2001, 4, 9, 9, 9, '2026-06-30 05:20:04'),
+(2054, 2012, 2001, 4, 9, 9, 9, '2026-06-30 05:20:04'),
+(2055, 2010, 2001, 9, 8, 9, 8, '2026-06-30 05:20:34'),
+(2056, 2018, 2001, 9, 8, 9, 9, '2026-06-30 05:20:34'),
+(2057, 2014, 2001, 9, 8, 8, 9, '2026-06-30 05:20:34'),
+(2058, 2013, 2001, 9, 8, 9, 8, '2026-06-30 05:20:34'),
+(2059, 2017, 2001, 9, 8, 8, 8, '2026-06-30 05:20:34'),
+(2060, 2011, 2001, 9, 8, 9, 9, '2026-06-30 05:20:34'),
+(2061, 1, 2001, 9, 8, 9, 8, '2026-06-30 05:20:34'),
+(2062, 1008, 2001, 9, 8, 8, 9, '2026-06-30 05:20:34'),
+(2063, 2012, 2001, 9, 9, 9, 8, '2026-06-30 05:20:34'),
+(2064, 2010, 2001, 7, 7, 7, 9, '2026-06-30 05:21:27'),
+(2065, 2018, 2001, 7, 8, 8, 7, '2026-06-30 05:21:27'),
+(2066, 2014, 2001, 7, 8, 8, 9, '2026-06-30 05:21:27'),
+(2067, 2013, 2001, 7, 7, 7, 9, '2026-06-30 05:21:27'),
+(2068, 2017, 2001, 7, 7, 7, 7, '2026-06-30 05:21:27'),
+(2069, 2011, 2001, 7, 9, 9, 7, '2026-06-30 05:21:27'),
+(2070, 1, 2001, 7, 7, 7, 8, '2026-06-30 05:21:27'),
+(2071, 1008, 2001, 7, 7, 8, 9, '2026-06-30 05:21:27'),
+(2072, 2012, 2001, 7, 8, 7, 8, '2026-06-30 05:21:27'),
+(2073, 2010, 2001, 11, 9, 9, 9, '2026-06-30 05:21:55'),
+(2074, 2018, 2001, 11, 9, 9, 9, '2026-06-30 05:21:55'),
+(2075, 2014, 2001, 11, 9, 9, 8, '2026-06-30 05:21:55'),
+(2076, 2013, 2001, 11, 9, 8, 8, '2026-06-30 05:21:55'),
+(2077, 2017, 2001, 11, 9, 9, 8, '2026-06-30 05:21:55'),
+(2078, 2011, 2001, 11, 8, 8, 8, '2026-06-30 05:21:55'),
+(2079, 1, 2001, 11, 8, 9, 8, '2026-06-30 05:21:55'),
+(2080, 1008, 2001, 11, 8, 8, 8, '2026-06-30 05:21:55'),
+(2081, 2012, 2001, 11, 9, 8, 9, '2026-06-30 05:21:55'),
+(2082, 2010, 2001, 3, 9, 7, 7, '2026-06-30 05:22:23'),
+(2083, 2018, 2001, 3, 8, 8, 8, '2026-06-30 05:22:23'),
+(2084, 2014, 2001, 3, 8, 7, 8, '2026-06-30 05:22:23'),
+(2085, 2013, 2001, 3, 8, 8, 7, '2026-06-30 05:22:23'),
+(2086, 2017, 2001, 3, 8, 8, 8, '2026-06-30 05:22:23'),
+(2087, 2011, 2001, 3, 7, 7, 8, '2026-06-30 05:22:23'),
+(2088, 1, 2001, 3, 9, 9, 9, '2026-06-30 05:22:23'),
+(2089, 1008, 2001, 3, 9, 8, 8, '2026-06-30 05:22:23'),
+(2090, 2012, 2001, 3, 9, 9, 8, '2026-06-30 05:22:23'),
+(2091, 2010, 2001, 1, 8, 8, 6, '2026-06-30 05:22:58'),
+(2092, 2018, 2001, 1, 8, 8, 7, '2026-06-30 05:22:58'),
+(2093, 2014, 2001, 1, 8, 8, 7, '2026-06-30 05:22:58'),
+(2094, 2013, 2001, 1, 8, 7, 9, '2026-06-30 05:22:58'),
+(2095, 2017, 2001, 1, 8, 8, 7, '2026-06-30 05:22:58'),
+(2096, 2011, 2001, 1, 9, 9, 9, '2026-06-30 05:22:58'),
+(2097, 1, 2001, 1, 8, 9, 8, '2026-06-30 05:22:58'),
+(2098, 1008, 2001, 1, 8, 7, 9, '2026-06-30 05:22:58'),
+(2099, 2012, 2001, 1, 7, 6, 10, '2026-06-30 05:22:58'),
+(2100, 2010, 2001, 8, 8, 7, 6, '2026-06-30 05:23:31'),
+(2101, 2018, 2001, 8, 7, 6, 5, '2026-06-30 05:23:31'),
+(2102, 2014, 2001, 8, 6, 5, 5, '2026-06-30 05:23:31'),
+(2103, 2013, 2001, 8, 5, 6, 6, '2026-06-30 05:23:31'),
+(2104, 2017, 2001, 8, 7, 6, 6, '2026-06-30 05:23:31'),
+(2105, 2011, 2001, 8, 5, 6, 7, '2026-06-30 05:23:31'),
+(2106, 1, 2001, 8, 7, 8, 7, '2026-06-30 05:23:31'),
+(2107, 1008, 2001, 8, 7, 7, 6, '2026-06-30 05:23:31'),
+(2108, 2012, 2001, 8, 8, 7, 9, '2026-06-30 05:23:31'),
+(2109, 2010, 2001, 2, 6, 6, 6, '2026-06-30 05:24:00'),
+(2110, 2018, 2001, 2, 5, 7, 7, '2026-06-30 05:24:00'),
+(2111, 2014, 2001, 2, 7, 6, 7, '2026-06-30 05:24:00'),
+(2112, 2013, 2001, 2, 6, 6, 7, '2026-06-30 05:24:00'),
+(2113, 2017, 2001, 2, 6, 6, 8, '2026-06-30 05:24:00'),
+(2114, 2011, 2001, 2, 6, 7, 6, '2026-06-30 05:24:00'),
+(2115, 1, 2001, 2, 7, 8, 7, '2026-06-30 05:24:00'),
+(2116, 1008, 2001, 2, 7, 7, 6, '2026-06-30 05:24:00'),
+(2117, 2012, 2001, 2, 8, 8, 8, '2026-06-30 05:24:00'),
+(2118, 2010, 2001, 5, 7, 8, 8, '2026-06-30 05:24:32'),
+(2119, 2018, 2001, 5, 6, 7, 8, '2026-06-30 05:24:32'),
+(2120, 2014, 2001, 5, 6, 8, 8, '2026-06-30 05:24:32'),
+(2121, 2013, 2001, 5, 7, 8, 7, '2026-06-30 05:24:32'),
+(2122, 2017, 2001, 5, 8, 7, 8, '2026-06-30 05:24:32'),
+(2123, 2011, 2001, 5, 7, 8, 7, '2026-06-30 05:24:32'),
+(2124, 1, 2001, 5, 8, 8, 8, '2026-06-30 05:24:32'),
+(2125, 1008, 2001, 5, 8, 7, 6, '2026-06-30 05:24:32'),
+(2126, 2012, 2001, 5, 9, 8, 8, '2026-06-30 05:24:32'),
+(2127, 2010, 2001, 12, 9, 9, 9, '2026-06-30 05:25:08'),
+(2128, 2018, 2001, 12, 9, 9, 9, '2026-06-30 05:25:08'),
+(2129, 2014, 2001, 12, 9, 9, 9, '2026-06-30 05:25:08'),
+(2130, 2013, 2001, 12, 9, 9, 9, '2026-06-30 05:25:08'),
+(2131, 2017, 2001, 12, 9, 9, 9, '2026-06-30 05:25:08'),
+(2132, 2011, 2001, 12, 8, 8, 8, '2026-06-30 05:25:08'),
+(2133, 1, 2001, 12, 8, 8, 8, '2026-06-30 05:25:08'),
+(2134, 1008, 2001, 12, 8, 8, 8, '2026-06-30 05:25:08'),
+(2135, 2012, 2001, 12, 8, 8, 8, '2026-06-30 05:25:08'),
+(2136, 2006, 3001, 10, 7, 7, 7, '2026-06-30 05:51:59'),
+(2137, 2004, 3001, 10, 7, 6, 7, '2026-06-30 05:51:59'),
+(2138, 2005, 3001, 10, 9, 9, 8, '2026-06-30 05:51:59'),
+(2139, 2006, 3001, 4, 7, 7, 7, '2026-06-30 05:52:12'),
+(2140, 2004, 3001, 4, 6, 7, 7, '2026-06-30 05:52:12'),
+(2141, 2005, 3001, 4, 7, 0, 0, '2026-06-30 05:52:13'),
+(2142, 2006, 3001, 9, 7, 7, 7, '2026-06-30 05:52:28'),
+(2143, 2004, 3001, 9, 9, 7, 6, '2026-06-30 05:52:28'),
+(2144, 2005, 3001, 9, 1, 1, 1, '2026-06-30 05:52:28'),
+(2145, 2006, 3001, 12, 9, 9, 9, '2026-06-30 05:52:40'),
+(2146, 2004, 3001, 12, 8, 9, 9, '2026-06-30 05:52:40'),
+(2147, 2005, 3001, 12, 1, 1, 1, '2026-06-30 05:52:40'),
+(2148, 2006, 3001, 6, 9, 9, 9, '2026-06-30 05:52:51'),
+(2149, 2004, 3001, 6, 9, 9, 9, '2026-06-30 05:52:51'),
+(2150, 2005, 3001, 6, 1, 1, 1, '2026-06-30 05:52:51'),
+(2151, 2006, 3001, 7, 8, 8, 8, '2026-06-30 05:53:04'),
+(2152, 2004, 3001, 7, 8, 8, 8, '2026-06-30 05:53:04'),
+(2153, 2005, 3001, 7, 1, 1, 1, '2026-06-30 05:53:04'),
+(2154, 2006, 3001, 11, 9, 9, 9, '2026-06-30 05:53:17'),
+(2155, 2004, 3001, 11, 8, 8, 8, '2026-06-30 05:53:17'),
+(2156, 2005, 3001, 11, 1, 1, 1, '2026-06-30 05:53:17'),
+(2157, 2006, 3001, 3, 9, 8, 8, '2026-06-30 05:53:28'),
+(2158, 2004, 3001, 3, 8, 8, 8, '2026-06-30 05:53:28'),
+(2159, 2005, 3001, 3, 1, 1, 1, '2026-06-30 05:53:28'),
+(2160, 2006, 3001, 1, 9, 9, 8, '2026-06-30 05:53:39'),
+(2161, 2004, 3001, 1, 8, 8, 8, '2026-06-30 05:53:39'),
+(2162, 2005, 3001, 1, 1, 1, 1, '2026-06-30 05:53:39'),
+(2163, 2006, 3001, 8, 8, 8, 8, '2026-06-30 05:53:50'),
+(2164, 2004, 3001, 8, 8, 8, 8, '2026-06-30 05:53:50'),
+(2165, 2005, 3001, 8, 1, 1, 1, '2026-06-30 05:53:50'),
+(2166, 2006, 3001, 2, 8, 8, 8, '2026-06-30 05:54:01'),
+(2167, 2004, 3001, 2, 8, 8, 8, '2026-06-30 05:54:01'),
+(2168, 2005, 3001, 2, 1, 1, 1, '2026-06-30 05:54:01'),
+(2169, 2006, 3001, 5, 8, 8, 8, '2026-06-30 05:54:46'),
+(2170, 2004, 3001, 5, 8, 8, 8, '2026-06-30 05:54:46'),
+(2171, 2005, 3001, 5, 1, 1, 1, '2026-06-30 05:54:46');
+SET IDENTITY_INSERT dbo.[DiemThi] OFF;
+GO
+
+-- Dữ liệu bảng GiaoVien
+SET IDENTITY_INSERT dbo.[GiaoVien] ON;
+INSERT INTO dbo.[GiaoVien] ([GiaoVienID], [TaiKhoanID], [HoTen], [NgaySinh], [SoDienThoai], [DiaChi], [AnhDaiDien], [IsActive], [NgayTao], [NgayCapNhat]) VALUES
+(1, 3, N'Nguyễn Văn An', '1985-04-12', N'0912345678', N'Hà Nội', N'an_gv.png', 1, '2026-06-17 15:33:34', '2026-06-17 15:33:34'),
+(2, 4, N'Trần Thị Bình', '1990-08-22', N'0987654321', N'Hà Tĩnh', N'binh_gv.png', 1, '2026-06-17 15:33:34', '2026-06-17 21:44:29'),
+(3, NULL, N'Lê Văn Cường', '1988-11-04', N'0905123456', N'Đà Nẵng', N'1781731788947-ef3b5b363656cc6d30f7bfe30f68ded5.jpeg', 1, '2026-06-17 15:33:34', '2026-06-17 21:29:51'),
+(4, 6, N'Võ Thị Thông', '1971-08-09', N'0987761078', N'Hà Tĩnh', N'1781732627803-065ea3a4-9650-4807-9137-e0e5702d6783.jpeg', 1, '2026-06-17 21:43:49', '2026-06-17 21:46:07'),
+(1001, NULL, N'Nguyễn Thị Hoài', '1990-10-10', N'0987761068', N'Hà Nam', N'1782204872844-cover.jpg', 1, '2026-06-23 08:54:34', '2026-06-23 08:54:34'),
+(2001, 1001, N'Nguyễn Hữu Cường', '2001-12-11', N'098776153', N'Bắc Giang', N'1782793104262-hello.png', 1, '2026-06-30 04:18:26', '2026-06-30 11:34:36');
+SET IDENTITY_INSERT dbo.[GiaoVien] OFF;
+GO
+
+-- Dữ liệu bảng Lop
+SET IDENTITY_INSERT dbo.[Lop] ON;
+INSERT INTO dbo.[Lop] ([LopID], [KhoiID], [TenLop], [ThoiGianID], [GiaoVienID], [NgayTao]) VALUES
+(1, 1, N'1A', 2, 1, '2026-06-17 15:33:50'),
+(2, 2, N'2B', 2, 3, '2026-06-17 15:33:50'),
+(3, 3, N'3A', 1, 4, '2026-06-17 21:49:46'),
+(1001, 5, N'5A', 1, 2, '2026-06-23 02:13:16'),
+(1002, 4, N'4A', 2, 4, '2026-06-23 03:23:33'),
+(1003, 2, N'2A', 1001, 1, '2026-06-23 08:26:25'),
+(1004, 3, N'3B', 1001, 1001, '2026-06-23 08:26:25'),
+(1005, 5, N'5A', 1001, 4, '2026-06-23 08:26:25'),
+(1006, 1, N'1A', 1001, 2, '2026-06-23 09:08:43'),
+(2001, 2, N'2A', 1003, 2, '2026-06-24 04:28:50'),
+(2002, 3, N'3B', 1003, 1001, '2026-06-24 04:28:50'),
+(2003, 5, N'5A', 1003, 4, '2026-06-24 04:28:50'),
+(3001, 2, N'2A', 2001, 2, '2026-06-25 09:53:59'),
+(3002, 3, N'3B', 2001, 1001, '2026-06-25 09:53:59'),
+(3003, 5, N'5A', 2001, 4, '2026-06-25 09:53:59'),
+(4003, 1, N'1A', 3001, 3, '2026-06-30 05:08:39'),
+(4004, 2, N'2A', 3001, 2, '2026-06-30 05:43:12'),
+(4005, 3, N'3B', 3001, 1001, '2026-06-30 05:43:12'),
+(4006, 5, N'5A', 3001, 4, '2026-06-30 05:43:12');
+SET IDENTITY_INSERT dbo.[Lop] OFF;
+GO
+
+-- Dữ liệu bảng ThoiKhoaBieu
+SET IDENTITY_INSERT dbo.[ThoiKhoaBieu] ON;
+INSERT INTO dbo.[ThoiKhoaBieu] ([ThoiKhoaBieuID], [LopID], [ThuID], [TietHocID], [MonHocID], [GiaoVienID], [GhiChu]) VALUES
 (4, 2, 1, 1, 1, 2, N'Tiếng Việt - Phòng 102'),
 (5, 2, 1, 2, 2, 2, N'Toán - Phòng 102'),
-(6, 2, 3, 1, 5, 2, N'TN&XH - Sân trường');
-SET IDENTITY_INSERT ThoiKhoaBieu OFF;
+(6, 2, 3, 1, 5, 2, N'TN&XH - Sân trường'),
+(16, 1, 1, 1, 2, 1, NULL),
+(17, 1, 1, 2, 3, 1, NULL),
+(18, 1, 1, 3, 9, 1, NULL),
+(19, 1, 1, 4, 12, 1, NULL),
+(20, 1, 1, 5, 6, 1, NULL),
+(21, 1, 1, 6, 7, 1, NULL),
+(22, 1, 1, 7, 12, 1, NULL),
+(23, 1, 1, 8, 8, 1, NULL),
+(24, 1, 2, 1, 7, 1, NULL),
+(25, 1, 2, 2, 7, 1, NULL),
+(26, 1, 2, 3, 10, 1, NULL),
+(27, 1, 2, 4, 11, 1, NULL),
+(28, 1, 2, 5, 11, 1, NULL),
+(29, 1, 2, 6, 7, 1, NULL),
+(30, 1, 2, 7, 7, 1, NULL),
+(31, 1, 2, 8, 4, 1, NULL),
+(32, 1, 3, 1, 12, 1, NULL),
+(33, 1, 3, 2, 1, 1, NULL),
+(34, 1, 3, 3, 12, 1, NULL),
+(35, 1, 3, 4, 11, 1, NULL),
+(36, 1, 3, 5, 11, 1, NULL),
+(37, 1, 3, 6, 11, 1, NULL),
+(38, 1, 3, 7, 6, 1, NULL),
+(39, 1, 3, 8, 4, 1, NULL),
+(40, 1, 4, 1, 7, 1, NULL),
+(41, 1, 4, 2, 9, 1, NULL),
+(42, 1, 4, 3, 12, 1, NULL),
+(43, 1, 4, 4, 6, 1, NULL),
+(44, 1, 4, 5, 7, 1, NULL),
+(45, 1, 4, 6, 6, 1, NULL),
+(46, 1, 4, 7, 12, 1, NULL),
+(47, 1, 4, 8, 4, 1, NULL),
+(48, 1, 5, 1, 7, 1, NULL),
+(49, 1, 5, 2, 12, 1, NULL),
+(50, 1, 5, 3, 9, 1, NULL),
+(51, 1, 5, 4, 9, 1, NULL),
+(52, 1, 5, 5, 9, 1, NULL),
+(53, 1, 5, 6, 6, 1, NULL),
+(54, 1, 5, 7, 9, 1, NULL),
+(55, 1, 5, 8, 9, 1, NULL),
+(56, 3, 1, 1, 10, 4, NULL),
+(57, 3, 1, 2, 12, 4, NULL),
+(58, 3, 1, 3, 12, 4, NULL),
+(59, 3, 1, 4, 12, 4, NULL),
+(60, 3, 1, 5, 4, 4, NULL),
+(61, 3, 1, 6, 12, 4, NULL),
+(62, 3, 2, 1, 12, 4, NULL),
+(63, 3, 2, 2, 10, 4, NULL),
+(64, 3, 2, 3, 10, 4, NULL),
+(65, 3, 2, 4, 10, 4, NULL),
+(66, 3, 2, 5, 10, 4, NULL),
+(67, 3, 2, 6, 9, 4, NULL),
+(68, 3, 2, 8, 3, 4, NULL),
+(69, 3, 3, 1, 8, 4, NULL),
+(70, 3, 3, 2, 11, 4, NULL),
+(71, 3, 3, 3, 9, 4, NULL),
+(72, 3, 3, 5, 9, 4, NULL),
+(73, 3, 3, 7, 4, 4, NULL),
+(74, 3, 3, 8, 11, 4, NULL),
+(75, 3, 4, 1, 12, 4, NULL),
+(76, 3, 4, 2, 6, 4, NULL),
+(77, 3, 4, 3, 6, 4, NULL),
+(78, 3, 4, 4, 7, 4, NULL),
+(79, 3, 4, 5, 6, 4, NULL),
+(80, 3, 4, 7, 10, 4, NULL),
+(81, 3, 4, 8, 3, 4, NULL),
+(82, 3, 5, 1, 9, 4, NULL),
+(83, 3, 5, 2, 12, 4, NULL),
+(84, 3, 5, 3, 12, 4, NULL),
+(85, 3, 5, 5, 4, 4, NULL),
+(86, 3, 5, 6, 9, 4, NULL),
+(87, 3, 5, 7, 9, 4, NULL),
+(88, 3, 5, 8, 11, 4, NULL),
+(1001, 1001, 1, 1, 10, 2, NULL),
+(1002, 1001, 1, 3, 7, 2, NULL),
+(1003, 1001, 1, 5, 12, 2, NULL),
+(1004, 1001, 1, 7, 10, 2, NULL),
+(1005, 1001, 2, 1, 7, 2, NULL),
+(1006, 1001, 2, 3, 1, 2, NULL),
+(1007, 1001, 2, 4, 2, 2, NULL),
+(1008, 1001, 2, 5, 7, 2, NULL),
+(1009, 1001, 2, 7, 9, 2, NULL),
+(1010, 1001, 3, 1, 6, 2, NULL),
+(1011, 1001, 3, 2, 3, 2, NULL),
+(1012, 1001, 3, 3, 11, 2, NULL),
+(1013, 1001, 3, 5, 12, 2, NULL),
+(1014, 1001, 3, 6, 12, 2, NULL),
+(1015, 1001, 3, 7, 4, 2, NULL),
+(1016, 1001, 4, 1, 7, 2, NULL),
+(1017, 1001, 4, 2, 7, 2, NULL),
+(1018, 1001, 4, 3, 11, 2, NULL),
+(1019, 1001, 4, 6, 12, 2, NULL),
+(1020, 1001, 4, 7, 9, 2, NULL),
+(1021, 1001, 5, 1, 7, 2, NULL),
+(1022, 1001, 5, 2, 6, 2, NULL),
+(1023, 1001, 5, 3, 12, 2, NULL),
+(1024, 1001, 5, 4, 3, 2, NULL),
+(1025, 1001, 5, 5, 7, 2, NULL),
+(1026, 1001, 5, 6, 9, 2, NULL),
+(1027, 1002, 1, 1, 4, 4, NULL),
+(1028, 1002, 1, 2, 6, 4, NULL),
+(1029, 1002, 1, 3, 10, 4, NULL),
+(1030, 1002, 1, 4, 12, 4, NULL),
+(1031, 1002, 1, 6, 9, 4, NULL),
+(1032, 1002, 1, 7, 9, 4, NULL),
+(1033, 1002, 2, 1, 12, 4, NULL),
+(1034, 1002, 2, 2, 6, 4, NULL),
+(1035, 1002, 2, 3, 12, 4, NULL),
+(1036, 1002, 2, 4, 9, 4, NULL),
+(1037, 1002, 2, 5, 12, 4, NULL),
+(1038, 1002, 2, 6, 9, 4, NULL),
+(1039, 1002, 2, 7, 4, 4, NULL),
+(1040, 1002, 2, 8, 4, 4, NULL),
+(1041, 1002, 3, 1, 6, 4, NULL),
+(1042, 1002, 3, 2, 7, 4, NULL),
+(1043, 1002, 3, 3, 9, 4, NULL),
+(1044, 1002, 3, 4, 12, 4, NULL),
+(1045, 1002, 3, 6, 9, 4, NULL),
+(1046, 1002, 3, 7, 9, 4, NULL),
+(1047, 1002, 3, 8, 12, 4, NULL),
+(1048, 1002, 4, 1, 7, 4, NULL),
+(1049, 1002, 4, 2, 12, 4, NULL),
+(1050, 1002, 4, 3, 9, 4, NULL),
+(1051, 1002, 4, 4, 9, 4, NULL),
+(1052, 1002, 4, 6, 6, 4, NULL),
+(1053, 1002, 5, 1, 6, 4, NULL),
+(1054, 1002, 5, 2, 12, 4, NULL),
+(1055, 1002, 5, 3, 12, 4, NULL),
+(1056, 1002, 5, 4, 12, 4, NULL),
+(1057, 1002, 5, 7, 4, 4, NULL),
+(2001, 2001, 1, 1, 10, 2, NULL),
+(2002, 2001, 1, 2, 6, 2, NULL),
+(2003, 2001, 1, 3, 10, 2, NULL),
+(2004, 2001, 1, 4, 12, 2, NULL),
+(2005, 2001, 1, 5, 6, 2, NULL),
+(2006, 2001, 1, 6, 6, 2, NULL),
+(2007, 2001, 1, 7, 12, 2, NULL),
+(2008, 2001, 1, 8, 12, 2, NULL),
+(2009, 2001, 2, 1, 4, 2, NULL),
+(2010, 2001, 2, 2, 12, 2, NULL),
+(2011, 2001, 2, 3, 9, 2, NULL),
+(2012, 2001, 2, 4, 12, 2, NULL),
+(2013, 2001, 2, 5, 9, 2, NULL),
+(2014, 2001, 2, 6, 12, 2, NULL),
+(2015, 2001, 2, 7, 9, 2, NULL),
+(2016, 2001, 2, 8, 4, 2, NULL),
+(2017, 2001, 3, 1, 9, 2, NULL),
+(2018, 2001, 3, 2, 9, 2, NULL),
+(2019, 2001, 3, 3, 6, 2, NULL),
+(2020, 2001, 3, 4, 6, 2, NULL),
+(2021, 2001, 3, 5, 12, 2, NULL),
+(2022, 2001, 3, 6, 12, 2, NULL),
+(2023, 2001, 3, 7, 12, 2, NULL),
+(2024, 2001, 3, 8, 4, 2, NULL),
+(2025, 2001, 4, 1, 9, 2, NULL),
+(2026, 2001, 4, 2, 9, 2, NULL),
+(2027, 2001, 4, 3, 6, 2, NULL),
+(2028, 2001, 4, 4, 6, 2, NULL),
+(2029, 2001, 4, 5, 6, 2, NULL),
+(2030, 2001, 4, 6, 6, 2, NULL),
+(2031, 2001, 4, 7, 9, 2, NULL),
+(2032, 2001, 5, 1, 6, 2, NULL),
+(2033, 2001, 5, 2, 12, 2, NULL),
+(2034, 2001, 5, 3, 6, 2, NULL),
+(2035, 2001, 5, 4, 6, 2, NULL),
+(2036, 2001, 5, 5, 11, 2, NULL),
+(2037, 2001, 5, 6, 6, 2, NULL),
+(2038, 2001, 5, 7, 12, 2, NULL),
+(2039, 2001, 5, 8, 10, 2, NULL),
+(3001, 4004, 1, 1, 10, 2, NULL),
+(3002, 4004, 1, 2, 4, 2, NULL),
+(3003, 4004, 1, 3, 5, 2, NULL),
+(3004, 4004, 1, 4, 12, 2, NULL),
+(3005, 4004, 1, 5, 12, 2, NULL),
+(3006, 4004, 1, 6, 2, 2, NULL),
+(3007, 4004, 1, 7, 6, 2, NULL),
+(3008, 4004, 1, 8, 9, 2, NULL),
+(3009, 4004, 2, 1, 4, 2, NULL),
+(3010, 4004, 2, 2, 4, 2, NULL),
+(3011, 4004, 2, 3, 11, 2, NULL),
+(3012, 4004, 2, 4, 12, 2, NULL),
+(3013, 4004, 2, 7, 12, 2, NULL),
+(3014, 4004, 2, 8, 9, 2, NULL),
+(3015, 4004, 3, 1, 9, 2, NULL),
+(3016, 4004, 3, 2, 6, 2, NULL),
+(3017, 4004, 3, 3, 2, 2, NULL),
+(3018, 4004, 3, 4, 1, 2, NULL),
+(3019, 4004, 3, 6, 6, 2, NULL),
+(3020, 4004, 3, 7, 6, 2, NULL),
+(3021, 4004, 3, 8, 11, 2, NULL),
+(3022, 4004, 4, 1, 11, 2, NULL),
+(3023, 4004, 4, 2, 6, 2, NULL),
+(3024, 4004, 4, 3, 12, 2, NULL),
+(3025, 4004, 4, 4, 1, 2, NULL),
+(3026, 4004, 4, 5, 9, 2, NULL),
+(3027, 4004, 4, 6, 3, 2, NULL),
+(3028, 4004, 4, 7, 9, 2, NULL),
+(3029, 4004, 4, 8, 3, 2, NULL),
+(3030, 4004, 5, 1, 1, 2, NULL),
+(3031, 4004, 5, 2, 9, 2, NULL),
+(3032, 4004, 5, 3, 3, 2, NULL),
+(3033, 4004, 5, 4, 1, 2, NULL),
+(3034, 4004, 5, 5, 6, 2, NULL),
+(3035, 4004, 5, 6, 12, 2, NULL),
+(3036, 4004, 5, 7, 12, 2, NULL),
+(3037, 4004, 5, 8, 7, 2, NULL),
+(3066, 4006, 1, 1, 4, 4, NULL),
+(3067, 4006, 1, 2, 9, 4, NULL),
+(3068, 4006, 1, 3, 4, 4, NULL),
+(3069, 4006, 1, 4, 7, 4, NULL),
+(3070, 4006, 1, 5, 3, 4, NULL),
+(3071, 4006, 1, 6, 6, 4, NULL),
+(3072, 4006, 1, 7, 11, 4, NULL),
+(3073, 4006, 1, 8, 4, 4, NULL),
+(3074, 4006, 2, 1, 9, 4, NULL),
+(3075, 4006, 2, 2, 4, 4, NULL),
+(3076, 4006, 2, 3, 12, 4, NULL),
+(3077, 4006, 2, 4, 7, 4, NULL),
+(3078, 4006, 2, 5, 8, 4, NULL),
+(3079, 4006, 2, 7, 6, 4, NULL),
+(3080, 4006, 2, 8, 4, 4, NULL),
+(3081, 4006, 3, 1, 9, 4, NULL),
+(3082, 4006, 3, 2, 6, 4, NULL),
+(3083, 4006, 3, 3, 7, 4, NULL),
+(3084, 4006, 3, 4, 11, 4, NULL),
+(3085, 4006, 3, 5, 4, 4, NULL),
+(3086, 4006, 3, 6, 2, 4, NULL),
+(3087, 4006, 3, 7, 9, 4, NULL),
+(3088, 4006, 4, 1, 6, 4, NULL),
+(3089, 4006, 4, 2, 3, 4, NULL),
+(3090, 4006, 4, 3, 7, 4, NULL),
+(3091, 4006, 4, 4, 7, 4, NULL),
+(3092, 4006, 4, 5, 5, 4, NULL),
+(3093, 4006, 4, 6, 7, 4, NULL),
+(3094, 4006, 4, 8, 9, 4, NULL),
+(3095, 4006, 5, 1, 12, 4, NULL),
+(3096, 4006, 5, 2, 12, 4, NULL),
+(3097, 4006, 5, 3, 9, 4, NULL),
+(3098, 4006, 5, 4, 7, 4, NULL),
+(3099, 4006, 5, 5, 7, 4, NULL),
+(3100, 4006, 5, 6, 11, 4, NULL),
+(3101, 4006, 5, 7, 12, 4, NULL),
+(3102, 4003, 1, 1, 9, 3, NULL),
+(3103, 4003, 1, 2, 9, 3, NULL),
+(3104, 4003, 2, 1, 12, 3, NULL),
+(3105, 4003, 2, 2, 12, 3, NULL),
+(3106, 4003, 3, 1, 12, 3, NULL),
+(3107, 4003, 3, 3, 6, 3, NULL),
+(3108, 4003, 4, 1, 7, 3, NULL),
+(3109, 4003, 4, 4, 12, 3, NULL),
+(3110, 4003, 5, 1, 6, 3, NULL),
+(3111, 4003, 5, 4, 6, 3, NULL);
+SET IDENTITY_INSERT dbo.[ThoiKhoaBieu] OFF;
 GO
 
+-- Dữ liệu bảng HocBa
+SET IDENTITY_INSERT dbo.[HocBa] ON;
+INSERT INTO dbo.[HocBa] ([HocBaID], [HocSinhID], [LopID], [NhanXet], [DoLenLop], [NgayTao]) VALUES
+(1, 6, 3, N'Tự động backup khi lên lớp', 1, '2026-06-23 03:23:33'),
+(2, 7, 3, N'Tự động backup khi lên lớp', 1, '2026-06-23 03:23:33'),
+(3, 8, 3, N'Tự động backup khi lên lớp', 1, '2026-06-23 03:23:33'),
+(4, 1004, 1001, N'Tự động backup khi lên lớp', 1, '2026-06-23 03:23:33'),
+(5, 1005, 1001, N'Tự động backup khi lên lớp', 1, '2026-06-23 03:23:33'),
+(6, 1006, 1001, N'Tự động backup khi lên lớp', 1, '2026-06-23 03:23:33'),
+(7, 1007, 1001, N'Tự động backup khi lên lớp', 1, '2026-06-23 03:23:33'),
+(8, 1, 1, N'Tự động backup khi lên lớp', 1, '2026-06-23 08:26:25'),
+(9, 2, 1, N'Tự động backup khi lên lớp', 1, '2026-06-23 08:26:25'),
+(10, 3, 1, N'Tự động backup khi lên lớp', 1, '2026-06-23 08:26:25'),
+(11, 4, 2, N'Tự động backup khi lên lớp', 1, '2026-06-23 08:26:25'),
+(12, 5, 2, N'Tự động backup khi lên lớp', 1, '2026-06-23 08:26:25'),
+(13, 6, 1002, N'Tự động backup khi lên lớp', 1, '2026-06-23 08:26:25'),
+(14, 7, 1002, N'Tự động backup khi lên lớp', 1, '2026-06-23 08:26:25'),
+(15, 8, 1002, N'Tự động backup khi lên lớp', 1, '2026-06-23 08:26:25'),
+(1002, 1005, 1006, N'Tự động backup khi lên lớp', 1, '2026-06-24 04:28:50'),
+(1003, 1, 1003, N'Tự động backup khi lên lớp', 0, '2026-06-24 04:28:50'),
+(1004, 2, 1003, N'Tự động backup khi lên lớp', 0, '2026-06-24 04:28:50'),
+(1005, 3, 1003, N'Tự động backup khi lên lớp', 0, '2026-06-24 04:28:50'),
+(1006, 4, 1004, N'Tự động backup khi lên lớp', 0, '2026-06-24 04:28:50'),
+(1007, 5, 1004, N'Tự động backup khi lên lớp', 0, '2026-06-24 04:28:50'),
+(1008, 1004, 1004, N'Tự động backup khi lên lớp', 0, '2026-06-24 04:28:50'),
+(1009, 1006, 1004, N'Tự động backup khi lên lớp', 0, '2026-06-24 04:28:50'),
+(1010, 1007, 1004, N'Tự động backup khi lên lớp', 0, '2026-06-24 04:28:50'),
+(1011, 1008, 1004, N'Tự động backup khi lên lớp', 0, '2026-06-24 04:28:50'),
+(1012, 6, 1005, N'Tự động backup khi lên lớp', 0, '2026-06-24 04:28:50'),
+(1013, 7, 1005, N'Tự động backup khi lên lớp', 0, '2026-06-24 04:28:50'),
+(1014, 8, 1005, N'Tự động backup khi lên lớp', 0, '2026-06-24 04:28:50'),
+(2002, 1, 2001, N'Tự động backup khi lên lớp', 0, '2026-06-25 09:53:59'),
+(2003, 2, 2001, N'Tự động backup khi lên lớp', 0, '2026-06-25 09:53:59'),
+(2004, 3, 2001, N'Tự động backup khi lên lớp', 0, '2026-06-25 09:53:59'),
+(2005, 1005, 2001, N'Tự động backup khi lên lớp', 0, '2026-06-25 09:53:59'),
+(2006, 4, 2002, N'Tự động backup khi lên lớp', 0, '2026-06-25 09:53:59'),
+(2007, 5, 2002, N'Tự động backup khi lên lớp', 0, '2026-06-25 09:53:59'),
+(2008, 1004, 2002, N'Tự động backup khi lên lớp', 0, '2026-06-25 09:53:59'),
+(2009, 1006, 2002, N'Tự động backup khi lên lớp', 0, '2026-06-25 09:53:59'),
+(2010, 1007, 2002, N'Tự động backup khi lên lớp', 0, '2026-06-25 09:53:59'),
+(2011, 1008, 2002, N'Tự động backup khi lên lớp', 0, '2026-06-25 09:53:59'),
+(2012, 6, 2003, N'Tự động backup khi lên lớp', 0, '2026-06-25 09:53:59'),
+(2013, 7, 2003, N'Tự động backup khi lên lớp', 0, '2026-06-25 09:53:59'),
+(2014, 8, 2003, N'Tự động backup khi lên lớp', 0, '2026-06-25 09:53:59'),
+(3002, 1, 3001, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:07:19'),
+(3003, 2, 3001, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:07:19'),
+(3004, 3, 3001, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:07:19'),
+(3005, 1005, 3001, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:07:19'),
+(3006, 4, 3002, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:07:19'),
+(3007, 5, 3002, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:07:19'),
+(3008, 1004, 3002, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:07:19'),
+(3009, 1006, 3002, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:07:19'),
+(3010, 1007, 3002, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:07:19'),
+(3011, 1008, 3002, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:07:19'),
+(3012, 6, 3003, N'Tự động backup khi lên lớp', 1, '2026-06-30 05:07:19'),
+(3013, 7, 3003, N'Tự động backup khi lên lớp', 1, '2026-06-30 05:07:19'),
+(3014, 8, 3003, N'Tự động backup khi lên lớp', 1, '2026-06-30 05:07:19'),
+(3015, 2004, 3001, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3016, 2005, 3001, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3017, 2006, 3001, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3018, 2007, 3002, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3019, 2008, 3002, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3020, 2009, 3002, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3021, 1, 3003, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3022, 1008, 3003, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3023, 2010, 3003, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3024, 2011, 3003, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3025, 2012, 3003, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3026, 2013, 3003, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3027, 2014, 3003, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3028, 2017, 3003, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12'),
+(3029, 2018, 3003, N'Tự động backup khi lên lớp', 0, '2026-06-30 05:43:12');
+SET IDENTITY_INSERT dbo.[HocBa] OFF;
+GO
+
+-- Ràng buộc sau khi seed dữ liệu.
+ALTER TABLE dbo.[TaiKhoan] ADD CONSTRAINT [UQ__TaiKhoan__55F68FC0192E2D0A] UNIQUE ([TenDangNhap]);
+GO
+ALTER TABLE dbo.[HocSinh] ADD CONSTRAINT [CK__HocSinh__GioiTin__49C3F6B7] CHECK ([GioiTinh]=N'Nữ' OR [GioiTinh]=N'Nam');
+GO
+ALTER TABLE dbo.[TaiKhoan] ADD CONSTRAINT [CK__TaiKhoan__VaiTro__38996AB5] CHECK ([VaiTro]='CanBo' OR [VaiTro]='GiaoVien');
+GO
+ALTER TABLE dbo.[CanBo] ADD CONSTRAINT [FK__CanBo__TaiKhoanI__3E52440B] FOREIGN KEY ([TaiKhoanID]) REFERENCES dbo.[TaiKhoan] ([TaiKhoanID]) ON DELETE SET NULL;
+GO
+ALTER TABLE dbo.[DiemThi] ADD CONSTRAINT [FK__DiemThi__HocSinh__619B8048] FOREIGN KEY ([HocSinhID]) REFERENCES dbo.[HocSinh] ([HocSinhID]) ON DELETE CASCADE;
+GO
+ALTER TABLE dbo.[DiemThi] ADD CONSTRAINT [FK__DiemThi__MonHocI__6383C8BA] FOREIGN KEY ([MonHocID]) REFERENCES dbo.[MonHoc] ([MonHocID]);
+GO
+ALTER TABLE dbo.[DiemThi] ADD CONSTRAINT [FK__DiemThi__ThoiGia__628FA481] FOREIGN KEY ([ThoiGianID]) REFERENCES dbo.[ThoiGian] ([ThoiGianID]);
+GO
+ALTER TABLE dbo.[GiaoVien] ADD CONSTRAINT [FK__GiaoVien__TaiKho__440B1D61] FOREIGN KEY ([TaiKhoanID]) REFERENCES dbo.[TaiKhoan] ([TaiKhoanID]) ON DELETE SET NULL;
+GO
+ALTER TABLE dbo.[HocBa] ADD CONSTRAINT [FK__HocBa__HocSinhID__6754599E] FOREIGN KEY ([HocSinhID]) REFERENCES dbo.[HocSinh] ([HocSinhID]) ON DELETE CASCADE;
+GO
+ALTER TABLE dbo.[HocBa] ADD CONSTRAINT [FK__HocBa__LopID__68487DD7] FOREIGN KEY ([LopID]) REFERENCES dbo.[Lop] ([LopID]);
+GO
+ALTER TABLE dbo.[Lop] ADD CONSTRAINT [FK__Lop__GiaoVienID__5535A963] FOREIGN KEY ([GiaoVienID]) REFERENCES dbo.[GiaoVien] ([GiaoVienID]) ON DELETE SET NULL;
+GO
+ALTER TABLE dbo.[Lop] ADD CONSTRAINT [FK__Lop__KhoiID__534D60F1] FOREIGN KEY ([KhoiID]) REFERENCES dbo.[Khoi] ([KhoiID]);
+GO
+ALTER TABLE dbo.[Lop] ADD CONSTRAINT [FK__Lop__ThoiGianID__5441852A] FOREIGN KEY ([ThoiGianID]) REFERENCES dbo.[ThoiGian] ([ThoiGianID]);
+GO
+ALTER TABLE dbo.[MonHoc_Khoi] ADD CONSTRAINT [FK__MonHoc_Kh__KhoiI__5EBF139D] FOREIGN KEY ([KhoiID]) REFERENCES dbo.[Khoi] ([KhoiID]) ON DELETE CASCADE;
+GO
+ALTER TABLE dbo.[MonHoc_Khoi] ADD CONSTRAINT [FK__MonHoc_Kh__MonHo__5DCAEF64] FOREIGN KEY ([MonHocID]) REFERENCES dbo.[MonHoc] ([MonHocID]) ON DELETE CASCADE;
+GO
+ALTER TABLE dbo.[ThoiKhoaBieu] ADD CONSTRAINT [FK__ThoiKhoaB__GiaoV__74AE54BC] FOREIGN KEY ([GiaoVienID]) REFERENCES dbo.[GiaoVien] ([GiaoVienID]);
+GO
+ALTER TABLE dbo.[ThoiKhoaBieu] ADD CONSTRAINT [FK__ThoiKhoaB__LopID__70DDC3D8] FOREIGN KEY ([LopID]) REFERENCES dbo.[Lop] ([LopID]) ON DELETE CASCADE;
+GO
+ALTER TABLE dbo.[ThoiKhoaBieu] ADD CONSTRAINT [FK__ThoiKhoaB__MonHo__73BA3083] FOREIGN KEY ([MonHocID]) REFERENCES dbo.[MonHoc] ([MonHocID]);
+GO
+ALTER TABLE dbo.[ThoiKhoaBieu] ADD CONSTRAINT [FK__ThoiKhoaB__ThuID__71D1E811] FOREIGN KEY ([ThuID]) REFERENCES dbo.[Thu] ([ThuID]);
+GO
+ALTER TABLE dbo.[ThoiKhoaBieu] ADD CONSTRAINT [FK__ThoiKhoaB__TietH__72C60C4A] FOREIGN KEY ([TietHocID]) REFERENCES dbo.[TietHoc] ([TietHocID]);
+GO
+
+PRINT N'Seed database PriSchool thành công.';

@@ -269,12 +269,20 @@ export class LopHocService {
     await this.findOne(id);
     const hasLopId = await this.hasHocSinhLopIdColumn();
 
-    await this.dataSource.transaction(async (manager) => {
-      if (hasLopId) {
-        await manager.query(`UPDATE HocSinh SET LopID = NULL WHERE LopID = @0`, [id]);
-      }
-      await manager.query(`DELETE FROM Lop WHERE LopID = @0`, [id]);
-    });
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        await manager.query(`DELETE FROM ThoiKhoaBieu WHERE LopID = @0`, [id]);
+        await manager.query(`DELETE FROM HocBa WHERE LopID = @0`, [id]);
+
+        if (hasLopId) {
+          await manager.query(`UPDATE HocSinh SET LopID = NULL WHERE LopID = @0`, [id]);
+        }
+
+        await manager.query(`DELETE FROM Lop WHERE LopID = @0`, [id]);
+      });
+    } catch (error) {
+      throw new BadRequestException('Không thể xóa lớp vì lớp vẫn còn dữ liệu liên kết trong hệ thống.');
+    }
 
     return { message: 'Đã xóa lớp học thành công!' };
   }
