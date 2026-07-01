@@ -1,16 +1,31 @@
 import React, { useEffect, useState } from 'react'
 import api from '../api/axiosClient'
-import { useNotification } from '../components/NotificationProvider'
+import Swal from 'sweetalert2'
 
 export default function AdminHocSinhPage() {
-  const { showError } = useNotification()
   const [list, setList] = useState([])
   const [editId, setEditId] = useState(null)
   const [search, setSearch] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
+const showSuccess = (message) => {
+  Swal.fire({
+    icon: 'success',
+    title: 'Thành công',
+    text: message,
+    confirmButtonText: 'OK',
+  })
+}
 
+const showError = (message) => {
+  Swal.fire({
+    icon: 'error',
+    title: 'Lỗi',
+    text: message,
+    confirmButtonText: 'Đóng',
+  })
+}
   const [form, setForm] = useState({
     TenHocSinh: '',
     NgaySinh: '',
@@ -54,17 +69,22 @@ export default function AdminHocSinhPage() {
   }
 
   const handleSubmit = async () => {
+  try {
     if (editId) {
       await api.patch(`/hoc-sinh/${editId}`, form)
+      showSuccess('Cập nhật học sinh thành công!')
       setEditId(null)
     } else {
       await api.post('/hoc-sinh', form)
+      showSuccess('Thêm học sinh thành công!')
     }
 
     resetForm()
-
     loadData()
+  } catch (err) {
+    showError(err.response?.data?.message || 'Lưu học sinh thất bại!')
   }
+}
 
   const uploadImageFile = async (file) => {
     if (!file) return
@@ -76,6 +96,12 @@ export default function AdminHocSinhPage() {
     try {
       const res = await api.post('/upload/image', formData)
       setForm((current) => ({ ...current, AnhDaiDien: res.data.filename }))
+      Swal.fire({
+  icon: 'success',
+  title: 'Upload thành công',
+  timer: 1200,
+  showConfirmButton: false,
+})
     } catch (err) {
       showError(err.response?.data?.message || 'Upload ảnh thất bại!')
     } finally {
@@ -95,9 +121,39 @@ export default function AdminHocSinhPage() {
   }
 
   const handleDelete = async (id) => {
+  const result = await Swal.fire({
+    title: 'Bạn có chắc?',
+    text: 'Học sinh sẽ bị xóa khỏi hệ thống!',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Xóa',
+    cancelButtonText: 'Hủy',
+  })
+
+  if (!result.isConfirmed) return
+
+  try {
     await api.delete(`/hoc-sinh/${id}`)
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Đã xóa!',
+      text: 'Xóa học sinh thành công!',
+      timer: 1500,
+      showConfirmButton: false,
+    })
+
     loadData()
+  } catch (err) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Lỗi',
+      text: err.response?.data?.message || 'Xóa học sinh thất bại!',
+    })
   }
+}
 
   const totalPages = Math.ceil(list.length / itemsPerPage)
   const currentStudents = list.slice(

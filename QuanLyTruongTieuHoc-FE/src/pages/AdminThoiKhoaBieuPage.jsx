@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axiosClient';
-import { useNotification } from '../components/NotificationProvider';
+import Swal from 'sweetalert2';
 
 const selectStyle = {
   width: '100%',
@@ -51,7 +51,25 @@ function classOptionLabel(lop) {
 }
 
 export default function AdminThoiKhoaBieuPage() {
-  const { showError, showSuccess } = useNotification();
+  const showSuccess = (message) => {
+    Swal.fire({
+      icon: 'success',
+      title: 'Thành công',
+      text: message,
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#3085d6',
+    });
+  };
+
+  const showError = (message) => {
+    Swal.fire({
+      icon: 'error',
+      title: 'Lỗi',
+      text: message,
+      confirmButtonText: 'Đóng',
+      confirmButtonColor: '#d33',
+    });
+  };
   const [options, setOptions] = useState({ khoi: [], lop: [], thu: [], tietHoc: [], monHoc: [] });
   const [selectedKhoiId, setSelectedKhoiId] = useState('');
   const [selectedLopId, setSelectedLopId] = useState('');
@@ -75,7 +93,11 @@ export default function AdminThoiKhoaBieuPage() {
       })
       .catch((err) => {
         console.error('Lỗi tải dữ liệu thời khóa biểu', err);
-        showError('Không tải được dữ liệu thời khóa biểu.');
+        Swal.fire({
+          icon: 'error',
+          title: 'Lỗi',
+          text: 'Không tải được dữ liệu thời khóa biểu.',
+        });
       });
   }, []);
 
@@ -110,7 +132,11 @@ export default function AdminThoiKhoaBieuPage() {
       setClassInfo(res.data.lop);
       setGrid(nextGrid);
     } catch (err) {
-      showError(err.response?.data?.message || 'Không xem được thời khóa biểu!');
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi',
+        text: err.response?.data?.message || 'Không xem được thời khóa biểu!',
+      });
     } finally {
       setLoading(false);
     }
@@ -122,7 +148,18 @@ export default function AdminThoiKhoaBieuPage() {
 
   const applyTimetable = async () => {
     if (!selectedLopId) return showError('Vui lòng chọn lớp!');
-    if (!window.confirm('Bạn có chắc muốn áp dụng thay đổi thời khóa biểu này?')) return;
+    const result = await Swal.fire({
+      title: 'Xác nhận',
+      text: 'Bạn có chắc muốn áp dụng thay đổi thời khóa biểu này?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Áp dụng',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+    });
+
+    if (!result.isConfirmed) return;
 
     const entries = [];
     options.thu.forEach((thu) => {
@@ -144,9 +181,20 @@ export default function AdminThoiKhoaBieuPage() {
       });
       setClassInfo(res.data.lop);
       setGrid(nextGrid);
-      showSuccess('Cập nhật thời khóa biểu thành công!');
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công',
+        text: 'Cập nhật thời khóa biểu thành công!',
+        timer: 1500,
+        showConfirmButton: false,
+      });
     } catch (err) {
-      showError(err.response?.data?.message || 'Cập nhật thời khóa biểu thất bại!');
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi',
+        text: err.response?.data?.message || 'Cập nhật thời khóa biểu thất bại!',
+        confirmButtonText: 'Đóng',
+      });
     } finally {
       setLoading(false);
     }

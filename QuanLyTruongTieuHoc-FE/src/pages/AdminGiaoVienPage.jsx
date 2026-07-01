@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axiosClient';
-import { useNotification } from '../components/NotificationProvider';
+import Swal from 'sweetalert2';
 
 const emptyForm = {
   TaiKhoanID: '',
@@ -51,7 +51,6 @@ function resolveImageSrc(value) {
 }
 
 export default function AdminGiaoVienPage() {
-  const { showError, showSuccess } = useNotification();
   const [teachers, setTeachers] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -62,6 +61,23 @@ export default function AdminGiaoVienPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
+  const showSuccess = (message) => {
+  Swal.fire({
+    icon: 'success',
+    title: 'Thành công',
+    text: message,
+    confirmButtonText: 'OK',
+  });
+};
+
+const showError = (message) => {
+  Swal.fire({
+    icon: 'error',
+    title: 'Lỗi',
+    text: message,
+    confirmButtonText: 'Đóng',
+  });
+};
   const loadData = async () => {
     const [teacherRes, accountRes] = await Promise.all([
       api.get('/api/giaovien'),
@@ -140,17 +156,40 @@ export default function AdminGiaoVienPage() {
     }
   };
 
-  const deleteTeacher = async (teacher) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa giáo viên "${teacher.HoTen}"?`)) return;
+const deleteTeacher = async (teacher) => {
+  const result = await Swal.fire({
+    title: 'Xóa giáo viên?',
+    text: `Bạn có chắc muốn xóa giáo viên "${teacher.HoTen}"?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Xóa',
+    cancelButtonText: 'Hủy',
+  });
 
-    try {
-      await api.delete(`/api/giaovien/${teacher.GiaoVienID}`);
-      await loadData();
-      showSuccess('Xóa giáo viên thành công!');
-    } catch (err) {
-      showError(err.response?.data?.message || 'Xóa giáo viên thất bại!');
-    }
-  };
+  if (!result.isConfirmed) return;
+
+  try {
+    await api.delete(`/api/giaovien/${teacher.GiaoVienID}`);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Đã xóa',
+      text: 'Xóa giáo viên thành công!',
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    await loadData();
+  } catch (err) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Lỗi',
+      text: err.response?.data?.message || 'Xóa giáo viên thất bại!',
+    });
+  }
+};
 
   const accountOptions = editingId && form.TaiKhoanID
     ? [

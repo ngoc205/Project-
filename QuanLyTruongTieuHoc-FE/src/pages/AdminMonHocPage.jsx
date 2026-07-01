@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axiosClient';
-import { useNotification } from '../components/NotificationProvider';
+import Swal from 'sweetalert2';
 
 export default function AdminMonHocPage() {
-  const { showError, showSuccess } = useNotification();
   const [monHocs, setMonHocs] = useState([]);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,10 +39,22 @@ export default function AdminMonHocPage() {
 
       if (isEditing) {
         await api.put(`/mon-hoc/${editId}`, payload);
-        showSuccess('Cập nhật môn học thành công!');
+        Swal.fire({
+  icon: 'success',
+  title: 'Thành công',
+  text: 'Cập nhật môn học thành công!',
+  timer: 1500,
+  showConfirmButton: false,
+});
       } else {
         await api.post('/mon-hoc', payload);
-        showSuccess('Thêm môn học thành công!');
+        Swal.fire({
+  icon: 'success',
+  title: 'Thành công',
+  text: 'Thêm môn học thành công!',
+  timer: 1500,
+  showConfirmButton: false,
+});
       }
 
       setFormData({ TenMonHoc: '', SoTiet: '', MoTa: '' });
@@ -51,7 +62,11 @@ export default function AdminMonHocPage() {
       setEditId(null);
       fetchMonHocs();
     } catch (err) {
-      showError('Có lỗi xảy ra: ' + (err.response?.data?.message || err.message));
+      Swal.fire({
+  icon: 'error',
+  title: 'Lỗi',
+  text: err.response?.data?.message || err.message,
+});
     }
   };
 
@@ -65,18 +80,42 @@ export default function AdminMonHocPage() {
     setEditId(monHoc.MonHocID);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Bạn có chắc muốn xóa môn học này?')) {
-      try {
-        await api.delete(`/mon-hoc/${id}`);
-        showSuccess('Xóa môn học thành công!');
-        fetchMonHocs();
-      } catch (err) {
-        console.error('Lỗi khi xóa môn học', err);
-        showError('Lỗi khi xóa môn học');
-      }
+ const handleDelete = async (id) => {
+  const result = await Swal.fire({
+    title: 'Bạn có chắc?',
+    text: 'Bạn sẽ không thể hoàn tác thao tác này!',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Xóa',
+    cancelButtonText: 'Hủy',
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await api.delete(`/mon-hoc/${id}`);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Đã xóa!',
+        text: 'Xóa môn học thành công!',
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      fetchMonHocs();
+    } catch (err) {
+      console.error(err);
+
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi',
+        text: 'Lỗi khi xóa môn học',
+      });
     }
-  };
+  }
+};
 
   const filteredMonHocs = monHocs.filter(mon =>
     mon.TenMonHoc.toLowerCase().includes(search.toLowerCase())
