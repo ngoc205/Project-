@@ -174,22 +174,7 @@ const showError = (message) => {
         </p>
       </div>
 
-      {/* SEARCH */}
-      <div style={{ marginBottom: 20 }}>
-        <input
-          placeholder="🔍 Tìm kiếm học sinh..."
-          value={search}
-          onChange={(e) => handleSearch(e.target.value)}
-          style={{
-            padding: 10,
-            width: '100%',
-            maxWidth: 400,
-            borderRadius: 8,
-            border: '1px solid #ccc',
-            outline: 'none'
-          }}
-        />
-      </div>
+      
 
       {/* FORM CARD */}
       <div style={{
@@ -293,7 +278,22 @@ const showError = (message) => {
           {editId ? '💾 Cập nhật' : '➕ Thêm mới'}
         </button>
       </div>
-
+{/* SEARCH */}
+      <div style={{ marginBottom: 20 }}>
+        <input
+          placeholder="🔍 Tìm kiếm học sinh..."
+          value={search}
+          onChange={(e) => handleSearch(e.target.value)}
+          style={{
+            padding: 10,
+            width: '100%',
+            maxWidth: 400,
+            borderRadius: 8,
+            border: '1px solid #ccc',
+            outline: 'none'
+          }}
+        />
+      </div>
       {/* TABLE */}
       <div style={{
         background: 'white',
