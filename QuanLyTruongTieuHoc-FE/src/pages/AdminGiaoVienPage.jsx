@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axiosClient';
+import { useNotification } from '../components/NotificationProvider';
 
 const emptyForm = {
   TaiKhoanID: '',
@@ -50,12 +51,16 @@ function resolveImageSrc(value) {
 }
 
 export default function AdminGiaoVienPage() {
+  const { showError, showSuccess, showConfirm } = useNotification();
   const [teachers, setTeachers] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const loadData = async () => {
     const [teacherRes, accountRes] = await Promise.all([
@@ -64,12 +69,13 @@ export default function AdminGiaoVienPage() {
     ]);
     setTeachers(teacherRes.data);
     setAccounts(accountRes.data);
+    setCurrentPage(1);
   };
 
   useEffect(() => {
     loadData().catch((err) => {
       console.error('Lỗi tải danh sách giáo viên', err);
-      alert('Không tải được danh sách giáo viên.');
+      showError('Không tải được danh sách giáo viên.');
     });
   }, []);
 
@@ -103,15 +109,15 @@ export default function AdminGiaoVienPage() {
     try {
       if (editingId) {
         await api.put(`/api/giaovien/${editingId}`, payload);
-        alert('Cập nhật giáo viên thành công!');
+        showSuccess('Cập nhật giáo viên thành công!');
       } else {
         await api.post('/api/giaovien', payload);
-        alert('Thêm giáo viên thành công!');
+        showSuccess('Thêm giáo viên thành công!');
       }
       resetForm();
       await loadData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Lưu giáo viên thất bại!');
+      showError(err.response?.data?.message || 'Lưu giáo viên thất bại!');
     } finally {
       setLoading(false);
     }
@@ -128,20 +134,27 @@ export default function AdminGiaoVienPage() {
       const res = await api.post('/upload/image', formData);
       setForm((current) => ({ ...current, AnhDaiDien: res.data.filename }));
     } catch (err) {
-      alert(err.response?.data?.message || 'Upload ảnh thất bại!');
+      showError(err.response?.data?.message || 'Upload ảnh thất bại!');
     } finally {
       setUploadingImage(false);
     }
   };
 
   const deleteTeacher = async (teacher) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa giáo viên "${teacher.HoTen}"?`)) return;
+    const confirmed = await showConfirm({
+      title: 'Xác nhận xóa',
+      message: `Bạn có chắc muốn xóa giáo viên "${teacher.HoTen}"?`,
+      confirmText: 'Xóa',
+      danger: true,
+    });
+    if (!confirmed) return;
 
     try {
       await api.delete(`/api/giaovien/${teacher.GiaoVienID}`);
       await loadData();
+      showSuccess('Xóa giáo viên thành công!');
     } catch (err) {
-      alert(err.response?.data?.message || 'Xóa giáo viên thất bại!');
+      showError(err.response?.data?.message || 'Xóa giáo viên thất bại!');
     }
   };
 
@@ -155,13 +168,50 @@ export default function AdminGiaoVienPage() {
       ].filter((account, index, arr) => arr.findIndex((item) => Number(item.TaiKhoanID) === Number(account.TaiKhoanID)) === index)
     : accounts;
 
+  const filteredTeachers = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) return teachers;
+
+    return teachers.filter((teacher) =>
+      [
+        teacher.GiaoVienID,
+        teacher.HoTen,
+        teacher.TenDangNhap,
+        teacher.SoDienThoai,
+        teacher.LopChuNhiem,
+        teacher.DiaChi,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(keyword)
+    );
+  }, [teachers, search]);
+
+  const totalPages = Math.ceil(filteredTeachers.length / itemsPerPage);
+  const currentTeachers = filteredTeachers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <div>
       <h2 style={{ marginBottom: '20px', color: '#1a365d' }}>Quản Trị: Quản Lý Giáo Viên</h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '360px minmax(0, 1fr)', gap: '28px', alignItems: 'start' }}>
-        <form onSubmit={submitForm} style={{ padding: '20px', background: '#f8fafc', borderRadius: '8px', display: 'grid', gap: '13px' }}>
-          <h3 style={{ margin: 0 }}>{editingId ? 'Sửa giáo viên' : 'Thêm giáo viên'}</h3>
+      <div style={{ display: 'grid', gap: '24px' }}>
+        <form
+          onSubmit={submitForm}
+          style={{
+            padding: '20px',
+            background: '#f8fafc',
+            borderRadius: '8px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+            gap: '13px',
+            alignItems: 'end',
+          }}
+        >
+          <h3 style={{ margin: 0, gridColumn: '1 / -1' }}>{editingId ? 'Sửa giáo viên' : 'Thêm giáo viên'}</h3>
 
           <label>
             <span>Họ tên</span>
@@ -225,10 +275,14 @@ export default function AdminGiaoVienPage() {
               placeholder="ten-file.png"
               onChange={(e) => setForm({ ...form, AnhDaiDien: e.target.value })}
             />
+          </label>
+
+          <label>
+            <span>Tải ảnh</span>
             <input
               type="file"
               accept="image/*"
-              style={{ marginTop: '8px' }}
+              style={{ ...inputStyle, marginTop: '6px' }}
               onChange={(e) => uploadImageFile(e.target.files?.[0])}
             />
             {uploadingImage && <div style={{ marginTop: '6px', color: '#64748b' }}>Đang tải ảnh...</div>}
@@ -253,18 +307,40 @@ export default function AdminGiaoVienPage() {
             Đang hoạt động
           </label>
 
-          <button type="submit" className="primary-button" disabled={loading}>
-            {editingId ? 'Lưu thay đổi' : 'Thêm mới'}
-          </button>
-          {editingId && (
-            <button type="button" onClick={resetForm} style={{ padding: '10px', cursor: 'pointer' }}>
-              Hủy
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button type="submit" className="primary-button" disabled={loading} style={{ flex: 1 }}>
+              {editingId ? 'Lưu thay đổi' : 'Thêm mới'}
             </button>
-          )}
+            {editingId && (
+              <button type="button" onClick={resetForm} style={{ padding: '10px 14px', cursor: 'pointer', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                Hủy
+              </button>
+            )}
+          </div>
         </form>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', minWidth: '980px', borderCollapse: 'collapse', fontSize: '14px' }}>
+        <div>
+          <div style={{ marginBottom: '15px' }}>
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="🔍 Tìm kiếm theo tên, tài khoản, lớp..."
+              style={{
+                width: '100%',
+                padding: '10px',
+                border: '1px solid #ccc',
+                borderRadius: '6px',
+                fontSize: '15px',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
             <thead>
               <tr>
                 <th style={thStyle}>ID</th>
@@ -279,7 +355,7 @@ export default function AdminGiaoVienPage() {
               </tr>
             </thead>
             <tbody>
-              {teachers.map((teacher) => (
+              {currentTeachers.map((teacher) => (
                 <tr key={teacher.GiaoVienID}>
                   <td style={tdStyle}>{teacher.GiaoVienID}</td>
                   <td style={tdStyle}>
@@ -306,26 +382,76 @@ export default function AdminGiaoVienPage() {
                   <td style={tdStyle}>{teacher.LopChuNhiem || '-'}</td>
                   <td style={tdStyle}>{teacher.IsActive ? 'Hoạt động' : 'Tạm khóa'}</td>
                   <td style={tdStyle}>
-                    <button onClick={() => startEdit(teacher)} style={{ marginRight: '10px', color: 'blue', cursor: 'pointer', background: 'none', border: 'none' }}>
+                    <button onClick={() => startEdit(teacher)} style={editButtonStyle}>
                       Sửa
                     </button>
-                    <button onClick={() => deleteTeacher(teacher)} style={{ color: 'red', cursor: 'pointer', background: 'none', border: 'none' }}>
+                    <button onClick={() => deleteTeacher(teacher)} style={deleteButtonStyle}>
                       Xóa
                     </button>
                   </td>
                 </tr>
               ))}
-              {teachers.length === 0 && (
+              {filteredTeachers.length === 0 && (
                 <tr>
                   <td colSpan="9" style={{ ...tdStyle, textAlign: 'center', color: '#64748b' }}>
-                    Chưa có giáo viên.
+                    Không tìm thấy giáo viên.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+          </div>
+
+          <Pagination currentPage={currentPage} totalPages={totalPages} onChange={setCurrentPage} />
         </div>
       </div>
+    </div>
+  );
+}
+
+const editButtonStyle = {
+  marginRight: '8px',
+  padding: '7px 12px',
+  color: '#1d4ed8',
+  background: '#eff6ff',
+  border: '1px solid #93c5fd',
+  borderRadius: '6px',
+  cursor: 'pointer',
+  fontWeight: 700,
+};
+
+const deleteButtonStyle = {
+  padding: '7px 12px',
+  color: '#b91c1c',
+  background: '#fef2f2',
+  border: '1px solid #fca5a5',
+  borderRadius: '6px',
+  cursor: 'pointer',
+  fontWeight: 700,
+};
+
+function Pagination({ currentPage, totalPages, onChange }) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
+      <button disabled={currentPage === 1} onClick={() => onChange(currentPage - 1)}>◀</button>
+      {Array.from({ length: totalPages }, (_, index) => (
+        <button
+          key={index}
+          onClick={() => onChange(index + 1)}
+          style={{
+            padding: '8px 12px',
+            background: currentPage === index + 1 ? '#2b6cb0' : '#fff',
+            color: currentPage === index + 1 ? '#fff' : '#000',
+            border: '1px solid #64748b',
+            cursor: 'pointer',
+          }}
+        >
+          {index + 1}
+        </button>
+      ))}
+      <button disabled={currentPage === totalPages} onClick={() => onChange(currentPage + 1)}>▶</button>
     </div>
   );
 }

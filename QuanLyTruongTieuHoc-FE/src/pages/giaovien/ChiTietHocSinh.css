@@ -1,0 +1,116 @@
+/* Sử dụng lại class container để đồng bộ giao diện */
+.page-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.info-content {
+    margin: 20px 0;
+    line-height: 1.8;
+    color: #334155;
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.nhan-xet-box {
+    background: #fff;
+    padding: 15px;
+    border-left: 4px solid #2563eb;
+    border-radius: 4px;
+    font-style: italic;
+    color: #475569;
+}
+
+.score-section {
+    margin-top: 18px;
+}
+
+.score-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.score-heading h3 {
+    margin: 0;
+    color: #1e3a8a;
+}
+
+.summary-badge {
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.summary-badge.pass {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.summary-badge.warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.score-table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.score-table th {
+    background: #f8fafc;
+    color: #475569;
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.score-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #edf2f7;
+    color: #334155;
+}
+
+.score-table th:not(:first-child),
+.score-table td:not(:first-child) {
+    text-align: center;
+}
+
+.subject-average {
+    color: #2563eb;
+    font-weight: 700;
+}
+
+.score-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+    color: #334155;
+    font-size: 14px;
+}
+
+.btn-detail {
+    margin-top: 20px;
+    background-color: #64748b;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-detail:hover {
+    background-color: #475569;
+}

@@ -11,7 +11,7 @@ export class TaiKhoan {
   @PrimaryGeneratedColumn({ name: 'TaiKhoanID' })
   TaiKhoanID: number;
 
-  @Column({ name: 'TenDangNhap', type: 'varchar', length: 35, unique: true })
+  @Column({ name: 'TenDangNhap', type: 'nvarchar', length: 35, unique: true })
   TenDangNhap: string;
 
   @Column({ name: 'MatKhau', type: 'varchar', length: 255 })

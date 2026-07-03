@@ -13,6 +13,10 @@ function buildGrid(entries = []) {
   return grid;
 }
 
+function classOptionLabel(lop) {
+  return `${lop.TenLop}${lop.TenGiaoVien ? ` - ${lop.TenGiaoVien}` : ' - Chưa phân công'}`;
+}
+
 function TimetablePage() {
   const [options, setOptions] = useState({ khoi: [], lop: [], thu: [], tietHoc: [], monHoc: [] });
   const [selectedKhoiId, setSelectedKhoiId] = useState('');
@@ -91,7 +95,7 @@ function TimetablePage() {
             <select value={selectedLopId} onChange={(e) => setSelectedLopId(e.target.value)}>
               <option value="">Chọn lớp</option>
               {filteredClasses.map((lop) => (
-                <option key={lop.LopID} value={lop.LopID}>{lop.TenLop}</option>
+                <option key={lop.LopID} value={lop.LopID}>{classOptionLabel(lop)}</option>
               ))}
             </select>
           </label>
@@ -141,7 +145,7 @@ function TimetablePage() {
                                   {entry.TenMonHoc}
                                 </div>
                               ) : (
-                                <div className="viewer-empty">-</div>
+                                <div className="viewer-empty">Trống tiết</div>
                               )}
                             </td>
                           );

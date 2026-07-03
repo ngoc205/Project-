@@ -26,11 +26,44 @@ export class LopHocService {
     return [...new Set(ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))];
   }
 
+  private classTermSql(hasLopId: boolean) {
+    const termWithStudentsSql = hasLopId
+      ? `
+        CASE WHEN EXISTS (
+          SELECT 1
+          FROM Lop lopCoHocSinh
+          JOIN HocSinh hs ON hs.LopID = lopCoHocSinh.LopID
+          WHERE lopCoHocSinh.ThoiGianID = tg.ThoiGianID
+            AND ISNULL(hs.IsActive, 1) = 1
+        ) THEN 0 ELSE 1 END,
+      `
+      : '';
+
+    return `
+      SELECT TOP 1 tg.ThoiGianID
+      FROM ThoiGian tg
+      ORDER BY
+        ${termWithStudentsSql}
+        CASE WHEN ISNULL(tg.IsCurrent, 0) = 1 THEN 0 ELSE 1 END,
+        tg.NgayBatDau DESC,
+        tg.ThoiGianID DESC
+    `;
+  }
+
   async findAll() {
     const hasLopId = await this.hasHocSinhLopIdColumn();
     const studentCountSql = hasLopId
       ? `(SELECT COUNT(*) FROM HocSinh hs WHERE hs.LopID = l.LopID)`
       : `0`;
+    const classFilterSql = hasLopId
+      ? `
+        (
+          EXISTS (SELECT 1 FROM HocSinh hs WHERE hs.LopID = l.LopID AND ISNULL(hs.IsActive, 1) = 1)
+          OR NOT EXISTS (SELECT 1 FROM HocSinh hs WHERE hs.LopID IS NOT NULL AND ISNULL(hs.IsActive, 1) = 1)
+            AND l.ThoiGianID = (${this.classTermSql(hasLopId)})
+        )
+      `
+      : `l.ThoiGianID = (${this.classTermSql(hasLopId)})`;
 
     return this.dataSource.query(`
       SELECT
@@ -46,6 +79,8 @@ export class LopHocService {
       FROM Lop l
       LEFT JOIN Khoi k ON k.KhoiID = l.KhoiID
       LEFT JOIN GiaoVien gv ON gv.GiaoVienID = l.GiaoVienID
+      JOIN ThoiGian tg ON tg.ThoiGianID = l.ThoiGianID
+      WHERE ${classFilterSql}
       ORDER BY l.KhoiID, l.TenLop
     `);
   }
@@ -74,6 +109,14 @@ export class LopHocService {
         SELECT gv.GiaoVienID, gv.HoTen, gv.SoDienThoai
         FROM GiaoVien gv
         WHERE ISNULL(gv.IsActive, 1) = 1
+          AND NOT EXISTS (
+            SELECT 1
+            FROM Lop l
+            WHERE l.GiaoVienID = gv.GiaoVienID
+              AND l.ThoiGianID = (
+                ${this.classTermSql(hasLopId)}
+              )
+          )
         ORDER BY gv.HoTen
       `),
       this.dataSource.query(studentOptionsSql),
@@ -139,15 +182,17 @@ export class LopHocService {
     if (!khoiId) throw new BadRequestException('Vui lòng chọn khối học!');
     if (!giaoVienId) throw new BadRequestException('Vui lòng chọn giáo viên chủ nhiệm!');
 
-    const existed = await this.dataSource.query(`SELECT LopID FROM Lop WHERE TenLop = @0`, [tenLop]);
-    if (existed.length > 0) throw new BadRequestException('Lớp đã chọn hiện đang tồn tại');
-
-    const teacherBusy = await this.dataSource.query(`SELECT LopID FROM Lop WHERE GiaoVienID = @0`, [giaoVienId]);
-    if (teacherBusy.length > 0) throw new BadRequestException('Giáo viên đã chủ nhiệm lớp khác!');
-
-    const timeRows = await this.dataSource.query(`SELECT TOP 1 ThoiGianID FROM ThoiGian ORDER BY ThoiGianID`);
+    const timeRows = await this.dataSource.query(`
+      ${this.classTermSql(await this.hasHocSinhLopIdColumn())}
+    `);
     const thoiGianId = timeRows[0]?.ThoiGianID;
     if (!thoiGianId) throw new BadRequestException('Chưa có dữ liệu ThoiGian để tạo lớp!');
+
+    const existed = await this.dataSource.query(`SELECT LopID FROM Lop WHERE TenLop = @0 AND ThoiGianID = @1`, [tenLop, thoiGianId]);
+    if (existed.length > 0) throw new BadRequestException('Tên lớp đã tồn tại trong năm học hiện tại.');
+
+    const teacherBusy = await this.dataSource.query(`SELECT LopID FROM Lop WHERE GiaoVienID = @0 AND ThoiGianID = @1`, [giaoVienId, thoiGianId]);
+    if (teacherBusy.length > 0) throw new BadRequestException('Giáo viên đã chủ nhiệm lớp khác trong năm học hiện tại!');
 
     const hasLopId = await this.hasHocSinhLopIdColumn();
     if (hocSinhIds.length > 0 && !hasLopId) {
@@ -190,10 +235,10 @@ export class LopHocService {
     if (!khoiId) throw new BadRequestException('Vui lòng chọn khối học!');
     if (!giaoVienId) throw new BadRequestException('Vui lòng chọn giáo viên chủ nhiệm!');
 
-    const existed = await this.dataSource.query(`SELECT LopID FROM Lop WHERE TenLop = @0 AND LopID <> @1`, [tenLop, id]);
+    const existed = await this.dataSource.query(`SELECT LopID FROM Lop WHERE TenLop = @0 AND LopID <> @1 AND ThoiGianID = @2`, [tenLop, id, current.ThoiGianID]);
     if (existed.length > 0) throw new BadRequestException('Tên lớp đã tồn tại!');
 
-    const teacherBusy = await this.dataSource.query(`SELECT LopID FROM Lop WHERE GiaoVienID = @0 AND LopID <> @1`, [giaoVienId, id]);
+    const teacherBusy = await this.dataSource.query(`SELECT LopID FROM Lop WHERE GiaoVienID = @0 AND LopID <> @1 AND ThoiGianID = @2`, [giaoVienId, id, current.ThoiGianID]);
     if (teacherBusy.length > 0) throw new BadRequestException('Giáo viên đã chủ nhiệm lớp khác!');
 
     if (hocSinhIds.length > 0 && !hasLopId) {
@@ -224,12 +269,20 @@ export class LopHocService {
     await this.findOne(id);
     const hasLopId = await this.hasHocSinhLopIdColumn();
 
-    await this.dataSource.transaction(async (manager) => {
-      if (hasLopId) {
-        await manager.query(`UPDATE HocSinh SET LopID = NULL WHERE LopID = @0`, [id]);
-      }
-      await manager.query(`DELETE FROM Lop WHERE LopID = @0`, [id]);
-    });
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        await manager.query(`DELETE FROM ThoiKhoaBieu WHERE LopID = @0`, [id]);
+        await manager.query(`DELETE FROM HocBa WHERE LopID = @0`, [id]);
+
+        if (hasLopId) {
+          await manager.query(`UPDATE HocSinh SET LopID = NULL WHERE LopID = @0`, [id]);
+        }
+
+        await manager.query(`DELETE FROM Lop WHERE LopID = @0`, [id]);
+      });
+    } catch (error) {
+      throw new BadRequestException('Không thể xóa lớp vì lớp vẫn còn dữ liệu liên kết trong hệ thống.');
+    }
 
     return { message: 'Đã xóa lớp học thành công!' };
   }

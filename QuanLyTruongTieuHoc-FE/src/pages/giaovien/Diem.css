@@ -1,0 +1,144 @@
+/* Compact table layout for teacher grade entry */
+.lop-container {
+  max-width: 1000px;
+  margin: 20px auto;
+  padding: 20px 28px;
+}
+
+.lop-container h2 {
+  margin-bottom: 14px;
+}
+
+.lop-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+  font-size: 15px;
+}
+
+.lop-container .lop-table th {
+  padding: 7px 10px !important;
+  line-height: 1.15 !important;
+}
+
+.lop-container .lop-table td {
+  padding: 5px 10px !important;
+  line-height: 1.15 !important;
+  height: 34px !important;
+  vertical-align: middle;
+}
+
+.lop-table input {
+  height: 28px;
+  padding: 3px 5px !important;
+  font-size: 14px;
+}
+
+.lop-container .btn-detail {
+  min-height: 28px !important;
+  padding: 4px 10px !important;
+  font-size: 14px;
+  line-height: 1.15;
+}
+
+/* Custom Modal Overlay */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Modal Content Box */
+.custom-modal {
+  background: white;
+  padding: 30px 40px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  min-width: 300px;
+  transform: translateY(-20px);
+  animation: slideDown 0.3s ease-out forwards;
+}
+
+/* Modal Icons */
+.modal-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  margin: 0 auto 15px auto;
+}
+
+.modal-icon.success {
+  background-color: #10b981; /* Xanh lá */
+}
+
+.modal-icon.error {
+  background-color: #ef4444; /* Đỏ */
+}
+
+/* Modal Typography */
+.modal-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 0 0 10px 0;
+}
+
+.modal-message {
+  font-size: 16px;
+  color: #4b5563;
+  margin: 0 0 25px 0;
+}
+
+/* Modal Button */
+.btn-close-modal {
+  padding: 10px 30px;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-close-modal.success {
+  background-color: #10b981;
+}
+
+.btn-close-modal.success:hover {
+  background-color: #059669;
+}
+
+.btn-close-modal.error {
+  background-color: #ef4444;
+}
+
+.btn-close-modal.error:hover {
+  background-color: #dc2626;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

@@ -1,12 +1,17 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import api from '../api/axiosClient'
-import Swal from 'sweetalert2'
+import { useNotification } from '../components/NotificationProvider'
 
 export default function AdminHocSinhPage() {
+  const { showSuccess, showError } = useNotification()
   const [list, setList] = useState([])
   const [editId, setEditId] = useState(null)
   const [search, setSearch] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [confirmAction, setConfirmAction] = useState(null)
+  const [processing, setProcessing] = useState(false)
+  const itemsPerPage = 5
 
   const [form, setForm] = useState({
     TenHocSinh: '',
@@ -29,6 +34,7 @@ export default function AdminHocSinhPage() {
   const loadData = async () => {
     const res = await api.get('/hoc-sinh')
     setList(res.data)
+    setCurrentPage(1)
   }
 
   useEffect(() => {
@@ -37,6 +43,7 @@ export default function AdminHocSinhPage() {
 
   const handleSearch = async (keyword) => {
     setSearch(keyword)
+    setCurrentPage(1)
 
     if (keyword.trim() === '') {
       loadData()
@@ -49,76 +56,25 @@ export default function AdminHocSinhPage() {
   }
 
   const handleSubmit = async () => {
-  if (!form.TenHocSinh.trim()) {
-    Swal.fire({
-      title: 'Thiếu dữ liệu',
-      text: 'Vui lòng nhập tên học sinh',
-      icon: 'warning',
-    })
-    return
-  }
-
-  if (!form.NgaySinh) {
-    Swal.fire({
-      title: 'Thiếu dữ liệu',
-      text: 'Vui lòng chọn ngày sinh',
-      icon: 'warning',
-    })
-    return
-  }
-
-  if (!form.GioiTinh) {
-    Swal.fire({
-      title: 'Thiếu dữ liệu',
-      text: 'Vui lòng chọn giới tính',
-      icon: 'warning',
-    })
-    return
-  }
-
-  try {
-    const result = await Swal.fire({
-      title: editId ? 'Cập nhật học sinh?' : 'Thêm học sinh?',
-      text: editId
-        ? 'Xác nhận cập nhật thông tin học sinh'
-        : 'Xác nhận thêm học sinh mới',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Đồng ý',
-      cancelButtonText: 'Hủy',
-    })
-
-    if (!result.isConfirmed) return
-
     if (editId) {
-      await api.patch(`/hoc-sinh/${editId}`, form)
-      setEditId(null)
-
-      await Swal.fire({
-        title: 'Thành công',
-        text: 'Cập nhật học sinh thành công',
-        icon: 'success',
+      setConfirmAction({
+        type: 'update',
+        title: 'Xác nhận cập nhật',
+        message: 'Bạn có chắc muốn lưu thay đổi thông tin học sinh này không?',
+        confirmText: 'Cập nhật',
       })
-    } else {
-      await api.post('/hoc-sinh', form)
-
-      await Swal.fire({
-        title: 'Thành công',
-        text: 'Thêm học sinh thành công',
-        icon: 'success',
-      })
+      return
     }
 
-    resetForm()
-    loadData()
-  } catch (err) {
-    Swal.fire({
-      title: 'Lỗi',
-      text: err?.response?.data?.message || 'Có lỗi xảy ra',
-      icon: 'error',
-    })
+    try {
+      await api.post('/hoc-sinh', form)
+      resetForm()
+      await loadData()
+      showSuccess('Thêm học sinh thành công!')
+    } catch (err) {
+      showError(err.response?.data?.message || 'Thêm học sinh thất bại!')
+    }
   }
-}
 
   const uploadImageFile = async (file) => {
     if (!file) return
@@ -131,7 +87,7 @@ export default function AdminHocSinhPage() {
       const res = await api.post('/upload/image', formData)
       setForm((current) => ({ ...current, AnhDaiDien: res.data.filename }))
     } catch (err) {
-      alert(err.response?.data?.message || 'Upload ảnh thất bại!')
+      showError(err.response?.data?.message || 'Upload ảnh thất bại!')
     } finally {
       setUploadingImage(false)
     }
@@ -147,36 +103,57 @@ export default function AdminHocSinhPage() {
       AnhDaiDien: item.AnhDaiDien || '',
     })
   }
-const handleDelete = async (id) => {
-  const result = await Swal.fire({
-    title: 'Xác nhận xóa',
-    text: 'Bạn có chắc chắn muốn xóa học sinh này?',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Xóa',
-    cancelButtonText: 'Hủy',
-  })
 
-  if (!result.isConfirmed) return
-
-  try {
-    await api.delete(`/hoc-sinh/${id}`)
-
-    await Swal.fire({
-      title: 'Thành công',
-      text: 'Đã xóa học sinh',
-      icon: 'success',
-    })
-
-    loadData()
-  } catch (err) {
-    Swal.fire({
-      title: 'Lỗi',
-      text: 'Xóa học sinh thất bại',
-      icon: 'error',
+  const handleDelete = (item) => {
+    setConfirmAction({
+      type: 'delete',
+      id: item.HocSinhID,
+      title: 'Xác nhận xóa',
+      message: `Bạn có chắc muốn xóa học sinh "${item.TenHocSinh}" không?`,
+      confirmText: 'Xóa',
     })
   }
-}
+
+  const closeConfirm = () => {
+    if (processing) return
+    setConfirmAction(null)
+  }
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return
+
+    setProcessing(true)
+    try {
+      if (confirmAction.type === 'update') {
+        await api.patch(`/hoc-sinh/${editId}`, form)
+        setEditId(null)
+        resetForm()
+        await loadData()
+        showSuccess('Cập nhật học sinh thành công!')
+      }
+
+      if (confirmAction.type === 'delete') {
+        await api.delete(`/hoc-sinh/${confirmAction.id}`)
+        await loadData()
+        showSuccess('Xóa học sinh thành công!')
+      }
+
+      setConfirmAction(null)
+    } catch (err) {
+      const fallbackMessage = confirmAction.type === 'delete'
+        ? 'Xóa học sinh thất bại!'
+        : 'Cập nhật học sinh thất bại!'
+      showError(err.response?.data?.message || fallbackMessage)
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const totalPages = Math.ceil(list.length / itemsPerPage)
+  const currentStudents = list.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
 
   return (
     <div style={{ padding: 30, background: '#f4f6fb', minHeight: '100vh' }}>
@@ -189,23 +166,6 @@ const handleDelete = async (id) => {
         <p style={{ color: '#666' }}>
           Thêm, sửa, xóa và tìm kiếm học sinh
         </p>
-      </div>
-
-      {/* SEARCH */}
-      <div style={{ marginBottom: 20 }}>
-        <input
-          placeholder="🔍 Tìm kiếm học sinh..."
-          value={search}
-          onChange={(e) => handleSearch(e.target.value)}
-          style={{
-            padding: 10,
-            width: '100%',
-            maxWidth: 400,
-            borderRadius: 8,
-            border: '1px solid #ccc',
-            outline: 'none'
-          }}
-        />
       </div>
 
       {/* FORM CARD */}
@@ -318,6 +278,22 @@ const handleDelete = async (id) => {
         overflow: 'hidden',
         boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
       }}>
+        <div style={{ padding: '16px 18px', borderBottom: '1px solid #e2e8f0' }}>
+          <input
+            placeholder="🔍 Tìm kiếm học sinh..."
+            value={search}
+            onChange={(e) => handleSearch(e.target.value)}
+            style={{
+              padding: 10,
+              width: '100%',
+              borderRadius: 8,
+              border: '1px solid #ccc',
+              outline: 'none',
+              boxSizing: 'border-box',
+              fontSize: 15,
+            }}
+          />
+        </div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead style={{ background: '#1a365d', color: 'white' }}>
             <tr>
@@ -332,7 +308,7 @@ const handleDelete = async (id) => {
           </thead>
 
           <tbody>
-            {list.map((item) => (
+            {currentStudents.map((item) => (
               <tr key={item.HocSinhID} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={td}>{item.HocSinhID}</td>
                 <td style={td}>
@@ -350,7 +326,7 @@ const handleDelete = async (id) => {
                   )}
                 </td>
                 <td style={td}>{item.TenHocSinh}</td>
-                <td style={td}>{item.NgaySinh}</td>
+                <td style={td}>{formatDateView(item.NgaySinh)}</td>
                 <td style={td}>{item.GioiTinh}</td>
                 <td style={td}>{item.DiaChi || '-'}</td>
                 <td style={td}>
@@ -358,15 +334,33 @@ const handleDelete = async (id) => {
                     Sửa
                   </button>
 
-                  <button onClick={() => handleDelete(item.HocSinhID)} style={btnDelete}>
+                  <button onClick={() => handleDelete(item)} style={btnDelete}>
                     Xóa
                   </button>
                 </td>
               </tr>
             ))}
+            {list.length === 0 && (
+              <tr>
+                <td colSpan="7" style={{ ...td, textAlign: 'center', color: '#64748b' }}>
+                  Không tìm thấy học sinh.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      <Pagination currentPage={currentPage} totalPages={totalPages} onChange={setCurrentPage} />
+
+      {confirmAction && (
+        <ConfirmDialog
+          action={confirmAction}
+          processing={processing}
+          onCancel={closeConfirm}
+          onConfirm={handleConfirmAction}
+        />
+      )}
 
     </div>
   )
@@ -377,6 +371,86 @@ function resolveImageSrc(value) {
   if (!value) return ''
   if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) return value
   return `/images/${value}`
+}
+
+function formatDateView(value) {
+  if (!value) return '-'
+  return new Date(value).toLocaleDateString('vi-VN')
+}
+
+function Pagination({ currentPage, totalPages, onChange }) {
+  if (totalPages <= 1) return null
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
+      <button disabled={currentPage === 1} onClick={() => onChange(currentPage - 1)}>◀</button>
+      {Array.from({ length: totalPages }, (_, index) => (
+        <button
+          key={index}
+          onClick={() => onChange(index + 1)}
+          style={{
+            padding: '8px 12px',
+            background: currentPage === index + 1 ? '#2b6cb0' : '#fff',
+            color: currentPage === index + 1 ? '#fff' : '#000',
+            border: '1px solid #64748b',
+            cursor: 'pointer',
+          }}
+        >
+          {index + 1}
+        </button>
+      ))}
+      <button disabled={currentPage === totalPages} onClick={() => onChange(currentPage + 1)}>▶</button>
+    </div>
+  )
+}
+
+function ConfirmDialog({ action, processing, onCancel, onConfirm }) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1500,
+        display: 'grid',
+        placeItems: 'center',
+        padding: 20,
+        background: 'rgba(15, 23, 42, 0.45)',
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="student-confirm-title"
+        style={{
+          width: 'min(430px, 100%)',
+          background: 'white',
+          borderRadius: 10,
+          padding: 22,
+          boxShadow: '0 24px 50px rgba(15, 23, 42, 0.28)',
+        }}
+      >
+        <h3 id="student-confirm-title" style={{ margin: '0 0 10px', color: '#1a365d' }}>
+          {action.title}
+        </h3>
+        <p style={{ margin: '0 0 20px', color: '#475569', lineHeight: 1.6 }}>
+          {action.message}
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+          <button type="button" onClick={onCancel} disabled={processing} style={btnCancel}>
+            Hủy
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={processing}
+            style={action.type === 'delete' ? btnConfirmDanger : btnConfirmPrimary}
+          >
+            {processing ? 'Đang xử lý...' : action.confirmText}
+          </button>
+        </div>
+      </section>
+    </div>
+  )
 }
 
 const inputStyle = {
@@ -412,4 +486,29 @@ const btnDelete = {
   border: 'none',
   borderRadius: 6,
   cursor: 'pointer'
+}
+
+const btnCancel = {
+  padding: '9px 14px',
+  background: 'white',
+  color: '#334155',
+  border: '1px solid #94a3b8',
+  borderRadius: 7,
+  cursor: 'pointer',
+  fontWeight: 700,
+}
+
+const btnConfirmPrimary = {
+  padding: '9px 14px',
+  background: '#1a365d',
+  color: 'white',
+  border: 'none',
+  borderRadius: 7,
+  cursor: 'pointer',
+  fontWeight: 700,
+}
+
+const btnConfirmDanger = {
+  ...btnConfirmPrimary,
+  background: '#b91c1c',
 }

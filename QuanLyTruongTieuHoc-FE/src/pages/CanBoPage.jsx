@@ -3,8 +3,10 @@ import {
   getAllCanBo,
   createCanBo,
 } from "../api/canBoApi";
+import { useNotification } from '../components/NotificationProvider';
 
 function CanBoPage() {
+  const { showError, showSuccess } = useNotification();
   const [canBos, setCanBos] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -42,7 +44,7 @@ function CanBoPage() {
     try {
       await createCanBo(formData);
 
-      alert("Thêm cán bộ thành công");
+      showSuccess('Thêm cán bộ thành công!');
 
       setFormData({
         HoTen: "",
@@ -56,7 +58,7 @@ function CanBoPage() {
       loadData();
     } catch (error) {
       console.error(error);
-      alert("Có lỗi xảy ra");
+      showError('Có lỗi xảy ra');
     }
   };
 

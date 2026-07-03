@@ -1,19 +1,23 @@
 import { useState } from 'react';
 import AuthLayout, { AuthField } from '../components/AuthLayout';
 import api from '../api/axiosClient';
-import Swal from 'sweetalert2';
+import { useNotification } from '../components/NotificationProvider';
 
 export default function LoginPage({ onNavigate }) {
+  const { showError, showSuccess } = useNotification();
   const [formData, setFormData] = useState({ 
     TenDangNhap: '', 
     MatKhau: '' 
   });
 
   const handleLogin = async () => {
-    console.log("Đang gửi đăng nhập:", formData);
+    const payload = {
+      TenDangNhap: formData.TenDangNhap.trim(),
+      MatKhau: formData.MatKhau.trim(),
+    };
 
     try {
-      const res = await api.post('/auth/login', formData);
+      const res = await api.post('/auth/login', payload);
 
       // Lưu Token và Role vào localStorage
       localStorage.setItem('token', res.data.accessToken);
@@ -22,17 +26,12 @@ export default function LoginPage({ onNavigate }) {
       localStorage.setItem('vaiTro', userInfo.VaiTro);
       localStorage.setItem('user', JSON.stringify({
         TaiKhoanID: userInfo.TaiKhoanID,
+        GiaoVienID: userInfo.GiaoVienID,
         TenDangNhap: userInfo.TenDangNhap,
         VaiTro: userInfo.VaiTro
       }));
 
-      // --- SỬA PHẦN NÀY: Thay alert thành SweetAlert2 khi đăng nhập thành công ---
-      Swal.fire({
-        icon: 'success',
-        title: 'Đăng nhập thành công!',
-        showConfirmButton: false,
-        timer: 1500
-      });
+      showSuccess('Đăng nhập thành công!');
       
       // Rẽ nhánh điều hướng dựa vào VaiTro
       if (userInfo.VaiTro === 'CanBo') {
@@ -45,15 +44,12 @@ export default function LoginPage({ onNavigate }) {
 
     } catch (err) {
       console.error("Lỗi đăng nhập:", err);
-      
-      // --- SỬA PHẦN NÀY: Thay alert thành SweetAlert2 khi đăng nhập thất bại ---
-      Swal.fire({
-        icon: 'error',
-        title: 'Đăng nhập thất bại',
-        text: 'Sai tên đăng nhập hoặc mật khẩu. Vui lòng kiểm tra lại!',
-        confirmButtonColor: '#3085d6',
-        confirmButtonText: 'Thử lại'
-      });
+      if (!err.response) {
+        showError('Không kết nối được backend. Hãy chạy server ở cổng 3000.');
+        return;
+      }
+
+      showError(err.response?.data?.message || 'Đăng nhập thất bại! Sai tên đăng nhập hoặc mật khẩu.');
     }
   };
 

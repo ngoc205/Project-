@@ -14,9 +14,9 @@ function Header({
     if (!user) return;
     
     if (user.VaiTro === 'CanBo') {
-      onNavigate('admin-monhoc'); // Cán bộ -> Vào trang quản lý
+      onNavigate('admin-monhoc'); 
     } else if (user.VaiTro === 'GiaoVien') {
-      onNavigate('teacher-dashboard'); // Giáo viên -> Vào trang xem TKB
+      onNavigate('teacher-dashboard'); 
     }
   };
 
@@ -51,25 +51,53 @@ function Header({
           className={menuOpen ? 'main-nav open' : 'main-nav'}
           aria-label="Điều hướng chính"
         >
-          {navItems.map((item) => (
-            <button
-              key={item.page}
-              className={activePage === item.page ? 'active' : ''}
-              type="button"
-              onClick={() => onNavigate(item.page)}
-            >
-              {item.label}
-            </button>
+          {/* Lọc danh sách menu: Loại bỏ Lớp chủ nhiệm và Điểm khỏi menu chung */}
+          {navItems
+            .filter(item => item.page !== 'lop-chu-nhiem' && item.page !== 'diem')
+            .map((item) => (
+              <button
+                key={item.page}
+                className={activePage === item.page ? 'active' : ''}
+                type="button"
+                onClick={() => onNavigate(item.page)}
+              >
+                {item.label}
+              </button>
           ))}
 
           {user?.VaiTro === 'GiaoVien' && (
-            <button
-              className={activePage === 'teacher-dashboard' ? 'active' : ''}
-              type="button"
-              onClick={() => onNavigate('teacher-dashboard')}
-            >
-              Trang GV
-            </button>
+            <>
+              <button
+                className={activePage === 'lop-chu-nhiem' ? 'active' : ''}
+                type="button"
+                onClick={() => onNavigate('lop-chu-nhiem')}
+              >
+                Lớp chủ nhiệm
+              </button>
+              <button
+                className={activePage === 'diem' ? 'active' : ''}
+                type="button"
+                onClick={() => onNavigate('diem')}
+              >
+                Điểm
+              </button>
+              <button
+                className={activePage === 'teacher-dashboard' ? 'active' : ''}
+                type="button"
+                onClick={() => onNavigate('teacher-dashboard')}
+              >
+                Trang GV
+              </button>
+              {/* Nút vào trang Thông tin cá nhân vừa code */}
+              <button
+                className={activePage === 'teacher-canhan' ? 'active' : ''}
+                type="button"
+                onClick={() => onNavigate('teacher-canhan')}
+              >
+                Cá nhân
+              </button>
+            </>
+            
           )}
 
           {user?.VaiTro === 'CanBo' && (
@@ -85,8 +113,6 @@ function Header({
 
         {user ? (
           <div className="user-box" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            
-            {/* Đã thay đổi thẻ span thành button và thêm sự kiện onClick */}
             <button 
               className="user-name" 
               type="button"

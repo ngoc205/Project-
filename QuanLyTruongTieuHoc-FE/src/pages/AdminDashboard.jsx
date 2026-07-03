@@ -1,7 +1,6 @@
 import AdminMonHocPage from './AdminMonHocPage';
 import AdminTaiKhoanPage from './AdminTaiKhoanPage';
 import AdminGiaoVienPage from './AdminGiaoVienPage';
-import AdminCanBoPage from './AdminCanBoPage';
 import AdminHocSinhPage from './AdminHocSinhPage';
 import AdminLopHocPage from './AdminLopHocPage';
 import AdminThoiKhoaBieuPage from './AdminThoiKhoaBieuPage';
@@ -9,19 +8,16 @@ import AdminThoiKhoaBieuPage from './AdminThoiKhoaBieuPage';
 export default function AdminDashboard({ page, onNavigate }) {
   const menuItems = [
     { id: 'admin-taikhoan', label: '👤 Quản lý Tài khoản' },
-    { id: 'admin-canbo', label: '👔 Quản lý Cán bộ' },
     { id: 'admin-giaovien', label: '👨‍🏫 Quản lý Giáo viên' },
     { id: 'admin-hocsinh', label: '🎓 Quản lý Học sinh' },
     { id: 'admin-lophoc', label: '🏫 Quản lý Khối - Lớp' },
     { id: 'admin-monhoc', label: '📚 Quản lý Môn học' },
-    { id: 'admin-diemthi', label: '📝 Quản lý Điểm thi' },
     { id: 'admin-thoikhoabieu', label: '📅 Quản lý Thời khóa biểu' },
   ];
 
   const developedPages = [
     'admin-monhoc',
     'admin-taikhoan',
-    'admin-canbo',
     'admin-giaovien',
     'admin-hocsinh',
     'admin-lophoc',
@@ -68,7 +64,6 @@ export default function AdminDashboard({ page, onNavigate }) {
       <div style={{ flex: 1, padding: '30px', backgroundColor: 'white', margin: '20px', borderRadius: '10px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
         {page === 'admin-monhoc' && <AdminMonHocPage />}
         {page === 'admin-taikhoan' && <AdminTaiKhoanPage />}
-        {page === 'admin-canbo' && <AdminCanBoPage />}
         {page === 'admin-giaovien' && <AdminGiaoVienPage />}
         {page === 'admin-hocsinh' && <AdminHocSinhPage />}
         {page === 'admin-lophoc' && <AdminLopHocPage />}

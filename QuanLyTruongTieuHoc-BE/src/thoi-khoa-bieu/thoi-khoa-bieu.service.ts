@@ -12,14 +12,60 @@ interface TimetableEntryPayload {
 export class ThoiKhoaBieuService {
   constructor(private readonly dataSource: DataSource) {}
 
+  private async hasHocSinhLopIdColumn() {
+    const rows = await this.dataSource.query(`
+      SELECT 1 AS ok
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_NAME = 'HocSinh' AND COLUMN_NAME = 'LopID'
+    `);
+    return rows.length > 0;
+  }
+
+  private classTermSql(hasLopId: boolean) {
+    const termWithStudentsSql = hasLopId
+      ? `
+        CASE WHEN EXISTS (
+          SELECT 1
+          FROM Lop lopCoHocSinh
+          JOIN HocSinh hs ON hs.LopID = lopCoHocSinh.LopID
+          WHERE lopCoHocSinh.ThoiGianID = tg.ThoiGianID
+            AND ISNULL(hs.IsActive, 1) = 1
+        ) THEN 0 ELSE 1 END,
+      `
+      : '';
+
+    return `
+      SELECT TOP 1 tg.ThoiGianID
+      FROM ThoiGian tg
+      ORDER BY
+        ${termWithStudentsSql}
+        CASE WHEN ISNULL(tg.IsCurrent, 0) = 1 THEN 0 ELSE 1 END,
+        tg.NgayBatDau DESC,
+        tg.ThoiGianID DESC
+    `;
+  }
+
   async getOptions() {
+    const hasLopId = await this.hasHocSinhLopIdColumn();
+    const classFilterSql = hasLopId
+      ? `
+        (
+          EXISTS (SELECT 1 FROM HocSinh hs WHERE hs.LopID = l.LopID AND ISNULL(hs.IsActive, 1) = 1)
+          OR NOT EXISTS (SELECT 1 FROM HocSinh hs WHERE hs.LopID IS NOT NULL AND ISNULL(hs.IsActive, 1) = 1)
+            AND l.ThoiGianID = (${this.classTermSql(hasLopId)})
+        )
+      `
+      : `l.ThoiGianID = (${this.classTermSql(hasLopId)})`;
+
     const [khoi, lop, thu, tietHoc, monHoc] = await Promise.all([
       this.dataSource.query(`SELECT KhoiID, TenKhoi FROM Khoi ORDER BY KhoiID`),
       this.dataSource.query(`
-        SELECT l.LopID, l.KhoiID, k.TenKhoi, l.TenLop, l.GiaoVienID, gv.HoTen AS TenGiaoVien
+        SELECT l.LopID, l.KhoiID, k.TenKhoi, l.TenLop, l.ThoiGianID, l.GiaoVienID, gv.HoTen AS TenGiaoVien
         FROM Lop l
         LEFT JOIN Khoi k ON k.KhoiID = l.KhoiID
         LEFT JOIN GiaoVien gv ON gv.GiaoVienID = l.GiaoVienID
+        JOIN ThoiGian tg ON tg.ThoiGianID = l.ThoiGianID
+        WHERE ${classFilterSql}
         ORDER BY l.KhoiID, l.TenLop
       `),
       this.dataSource.query(`SELECT ThuID, TenThu, ThuTu FROM Thu ORDER BY ThuTu, ThuID`),

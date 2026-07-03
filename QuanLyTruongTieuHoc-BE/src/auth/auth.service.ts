@@ -18,6 +18,7 @@ export interface LoginResponse {
   accessToken: string;
   user: {
     TaiKhoanID: number;
+    GiaoVienID?: number | null;
     TenDangNhap: string;
     VaiTro: string;
   };
@@ -75,12 +76,20 @@ export class AuthService {
       sub: user.TaiKhoanID,
       role: user.VaiTro,
     };
+    const giaoVienRows =
+      user.VaiTro === 'GiaoVien'
+        ? await this.taiKhoanRepository.manager.query(
+            `SELECT TOP 1 GiaoVienID FROM GiaoVien WHERE TaiKhoanID = @0`,
+            [user.TaiKhoanID],
+          )
+        : [];
 
     return {
       message: 'Đăng nhập thành công!',
       accessToken: this.jwtService.sign(payload),
       user: {
         TaiKhoanID: user.TaiKhoanID,
+        GiaoVienID: giaoVienRows[0]?.GiaoVienID || null,
         TenDangNhap: user.TenDangNhap,
         VaiTro: user.VaiTro,
       },
