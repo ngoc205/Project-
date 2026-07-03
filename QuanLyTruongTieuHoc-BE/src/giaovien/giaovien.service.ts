@@ -403,10 +403,11 @@ export class GiaovienService {
     try {
       return await this.dataSource.query(
         `
-        SELECT MonHocID, TenMonHoc
-        FROM MonHoc
-        WHERE ISNULL(IsActive, 1) = 1
-        ORDER BY TenMonHoc
+        SELECT DISTINCT mh.MonHocID, mh.TenMonHoc
+         FROM MonHoc mh
+         JOIN ThoiKhoaBieu tkb ON mh.MonHocID = tkb.MonHocID
+         WHERE tkb.LopID = @0 AND ISNULL(mh.IsActive, 1) = 1
+         ORDER BY mh.TenMonHoc
       `,
         [lopId],
       );
@@ -621,4 +622,44 @@ export class GiaovienService {
 
     return this.getBangDiemLopChuNhiem(id, monHocId);
   }
+
+  // =======================================================================
+  // U5: THÔNG TIN CÁ NHÂN & U6: ĐỔI MẬT KHẨU
+  // =======================================================================
+
+  async getThongTinCaNhan(taiKhoanId: number) {
+    const rows = await this.dataSource.query(
+      `SELECT gv.HoTen AS TenGiaoVien, gv.NgaySinh, gv.SoDienThoai, gv.DiaChi 
+       FROM GiaoVien gv 
+       WHERE gv.TaiKhoanID = @0`,
+      [taiKhoanId]
+    );
+    if (!rows[0]) throw new BadRequestException('Không tìm thấy thông tin giáo viên');
+    return rows[0];
+  }
+
+  async updateThongTinCaNhan(taiKhoanId: number, soDienThoai: string, diaChi: string) {
+    await this.dataSource.query(
+      `UPDATE GiaoVien 
+       SET SoDienThoai = @0, DiaChi = @1 
+       WHERE TaiKhoanID = @2`,
+      [soDienThoai, diaChi, taiKhoanId]
+    );
+    return { message: 'Lưu thông tin thành công!' };
+  }
+
+  async changePassword(taiKhoanId: number, matKhauMoi: string) {
+    if (!matKhauMoi || matKhauMoi.length > 30) {
+      throw new BadRequestException('Mật khẩu không hợp lệ (tối đa 30 ký tự)');
+    }
+    
+    await this.dataSource.query(
+      `UPDATE TaiKhoan 
+       SET MatKhau = @0 
+       WHERE TaiKhoanID = @1`,
+      [matKhauMoi, taiKhoanId]
+    );
+    return { message: 'Mật khẩu đã thay đổi' };
+  }
 }
+

@@ -88,7 +88,16 @@ function Header({
               >
                 Trang GV
               </button>
+              {/* Nút vào trang Thông tin cá nhân vừa code */}
+              <button
+                className={activePage === 'teacher-canhan' ? 'active' : ''}
+                type="button"
+                onClick={() => onNavigate('teacher-canhan')}
+              >
+                Cá nhân
+              </button>
             </>
+            
           )}
 
           {user?.VaiTro === 'CanBo' && (

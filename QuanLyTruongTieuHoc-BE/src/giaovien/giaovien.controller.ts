@@ -10,6 +10,30 @@ export class GiaovienController {
     return this.giaovienService.findAll();
   }
 
+   // API lấy thông tin cá nhân
+  @Get('canhan/:taiKhoanId')
+  async getProfile(@Param('taiKhoanId') id: string) {
+    return this.giaovienService.getThongTinCaNhan(Number(id));
+  }
+
+  // API lưu thông tin cá nhân
+  @Put('canhan/update-info/:taiKhoanId')
+  async updateInfo(
+    @Param('taiKhoanId') id: string,
+    @Body() payload: { SoDienThoai: string; DiaChi: string }
+  ) {
+    return this.giaovienService.updateThongTinCaNhan(Number(id), payload.SoDienThoai, payload.DiaChi);
+  }
+
+  // API thay đổi mật khẩu
+  @Put('canhan/change-password/:taiKhoanId')
+  async changePassword(
+    @Param('taiKhoanId') id: string,
+    @Body() payload: { MatKhauMoi: string }
+  ) {
+    return this.giaovienService.changePassword(Number(id), payload.MatKhauMoi);
+  }
+
   @Get('options')
   getOptions() {
     return this.giaovienService.getOptions();

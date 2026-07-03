@@ -12,8 +12,10 @@ import TeacherHomePage from './pages/giaovien/TeacherHomePage'
 import LopChuNhiem from './pages/giaovien/lopchunhiem'
 import Diem from './pages/giaovien/diem'
 import ChiTietHocSinh from './pages/giaovien/ChiTietHocSinh'
+import ThongTinCaNhan from './pages/giaovien/canhan'
 import { NotificationProvider, useNotification } from './components/NotificationProvider'
 import './App.css'
+
 
 const authPages = ['login']
 const teacherPages = ['teacher-dashboard', 'lop-chu-nhiem', 'diem', 'chi-tiet-hs']
@@ -105,6 +107,12 @@ function AppContent() {
         {page === 'diem' && <Diem teacherId={teacherId} onNavigate={changePage} />}
         {page === 'chi-tiet-hs' && (
           <ChiTietHocSinh hocSinhId={studentId} onNavigate={changePage} />
+        )}
+        {page === 'teacher-canhan' && (
+          <ThongTinCaNhan 
+            teacherId={user?.TaiKhoanID || user?.id || 3} 
+            onNavigate={changePage} 
+          />
         )}
       </main>
 
