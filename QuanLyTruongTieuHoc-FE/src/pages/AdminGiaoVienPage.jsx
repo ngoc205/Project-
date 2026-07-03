@@ -51,7 +51,7 @@ function resolveImageSrc(value) {
 }
 
 export default function AdminGiaoVienPage() {
-  const { showError, showSuccess } = useNotification();
+  const { showError, showSuccess, showConfirm } = useNotification();
   const [teachers, setTeachers] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -141,7 +141,13 @@ export default function AdminGiaoVienPage() {
   };
 
   const deleteTeacher = async (teacher) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa giáo viên "${teacher.HoTen}"?`)) return;
+    const confirmed = await showConfirm({
+      title: 'Xác nhận xóa',
+      message: `Bạn có chắc muốn xóa giáo viên "${teacher.HoTen}"?`,
+      confirmText: 'Xóa',
+      danger: true,
+    });
+    if (!confirmed) return;
 
     try {
       await api.delete(`/api/giaovien/${teacher.GiaoVienID}`);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../api/axiosClient';
 import './Diem.css';
 
@@ -232,7 +232,7 @@ const Diem = ({ teacherId, onNavigate }) => {
                   style={{ width: '50px', textAlign: 'center', padding: '5px' }}
                 />
               </td>
-              <td style={{ fontWeight: 'bold', color: '#2563eb' }}>
+              <td style={{ fontWeight: 'bold', color: '#2563eb', textAlign: 'center' }}>
                 {calculateAverage(hs.HeSo1, hs.HeSo2, hs.HeSo3)}
               </td>
             </tr>

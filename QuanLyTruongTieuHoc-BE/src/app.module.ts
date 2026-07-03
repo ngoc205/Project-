@@ -18,7 +18,7 @@ import { DiemModule } from './diem/diem.module';
       host: process.env.DB_HOST || 'localhost',
       port: Number(process.env.DB_PORT || 1433),
       username: process.env.DB_USERNAME || 'sa',
-      password: process.env.DB_PASSWORD || '123',
+      password: process.env.DB_PASSWORD || 'Thuong@0702',
       database: process.env.DB_DATABASE || 'PriSchool',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: false,

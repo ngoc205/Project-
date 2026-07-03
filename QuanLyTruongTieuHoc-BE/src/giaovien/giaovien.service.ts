@@ -349,7 +349,7 @@ export class GiaovienService {
     );
     const thoiGianId = thoiGianRows[0]?.ThoiGianID || null;
 
-    const bangDiem = thoiGianId
+    const bangDiem = thoiGianId && hocSinh.LopID
       ? await this.dataSource.query(
           `
           SELECT
@@ -363,14 +363,19 @@ export class GiaovienService {
               THEN ROUND((dt.DiemMieng + dt.DiemGiuaKy * 2 + dt.DiemCuoiKy * 3) / 6.0, 2)
               ELSE NULL
             END AS DiemTrungBinh
-          FROM MonHoc mh
+          FROM (
+            SELECT DISTINCT tkb.MonHocID
+            FROM ThoiKhoaBieu tkb
+            WHERE tkb.LopID = @2 AND tkb.MonHocID IS NOT NULL
+          ) monTheoLop
+          JOIN MonHoc mh ON mh.MonHocID = monTheoLop.MonHocID
           LEFT JOIN DiemThi dt ON dt.MonHocID = mh.MonHocID
             AND dt.HocSinhID = @0
             AND dt.ThoiGianID = @1
           WHERE ISNULL(mh.IsActive, 1) = 1
           ORDER BY mh.TenMonHoc
         `,
-          [hocSinhId, thoiGianId],
+          [hocSinhId, thoiGianId, hocSinh.LopID],
         )
       : [];
 
@@ -404,10 +409,12 @@ export class GiaovienService {
       return await this.dataSource.query(
         `
         SELECT DISTINCT mh.MonHocID, mh.TenMonHoc
-         FROM MonHoc mh
-         JOIN ThoiKhoaBieu tkb ON mh.MonHocID = tkb.MonHocID
-         WHERE tkb.LopID = @0 AND ISNULL(mh.IsActive, 1) = 1
-         ORDER BY mh.TenMonHoc
+        FROM ThoiKhoaBieu tkb
+        JOIN MonHoc mh ON mh.MonHocID = tkb.MonHocID
+        WHERE tkb.LopID = @0
+          AND tkb.MonHocID IS NOT NULL
+          AND ISNULL(mh.IsActive, 1) = 1
+        ORDER BY mh.TenMonHoc
       `,
         [lopId],
       );
@@ -662,4 +669,3 @@ export class GiaovienService {
     return { message: 'Mật khẩu đã thay đổi' };
   }
 }
-

@@ -3,7 +3,7 @@ import api from '../api/axiosClient';
 import { useNotification } from '../components/NotificationProvider';
 
 export default function AdminTaiKhoanPage() {
-  const { showError, showSuccess } = useNotification();
+  const { showError, showSuccess, showConfirm } = useNotification();
   const [taiKhoans, setTaiKhoans] = useState([]);
   const [formData, setFormData] = useState({ TenDangNhap: '', MatKhau: '', VaiTro: 'GiaoVien' });
   const [isEditing, setIsEditing] = useState(false);
@@ -42,15 +42,21 @@ export default function AdminTaiKhoanPage() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Bạn có chắc muốn xóa tài khoản này?')) {
-      try {
-        await api.delete(`/tai-khoan/${id}`);
-        showSuccess('Xóa tài khoản thành công!');
-        fetchTaiKhoans();
-      } catch (err) {
-        console.error('Lỗi khi xóa tài khoản', err);
-        showError('Lỗi khi xóa tài khoản');
-      }
+    const confirmed = await showConfirm({
+      title: 'Xác nhận xóa',
+      message: 'Bạn có chắc muốn xóa tài khoản này?',
+      confirmText: 'Xóa',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      await api.delete(`/tai-khoan/${id}`);
+      showSuccess('Xóa tài khoản thành công!');
+      fetchTaiKhoans();
+    } catch (err) {
+      console.error('Lỗi khi xóa tài khoản', err);
+      showError('Lỗi khi xóa tài khoản');
     }
   };
 

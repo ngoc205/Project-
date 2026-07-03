@@ -90,7 +90,7 @@ GO
 
 CREATE TABLE dbo.[TaiKhoan] (
     [TaiKhoanID] INT IDENTITY(1,1) NOT NULL,
-    [TenDangNhap] VARCHAR(35) NOT NULL,
+    [TenDangNhap] NVARCHAR(35) NOT NULL,
     [MatKhau] VARCHAR(255) NOT NULL,
     [VaiTro] VARCHAR(20) NOT NULL,
     [IsActive] BIT NULL DEFAULT ((1)),
@@ -305,8 +305,8 @@ INSERT INTO dbo.[TaiKhoan] ([TaiKhoanID], [TenDangNhap], [MatKhau], [VaiTro], [I
 (3, N'giaovien_an', N'123', N'GiaoVien', 1, '2026-06-17 15:33:23', '2026-06-17 15:33:23'),
 (4, N'giaovien_binh', N'123', N'GiaoVien', 1, '2026-06-17 15:33:23', '2026-06-17 15:33:23'),
 (5, N'thuong', N'07022005', N'CanBo', 1, '2026-06-17 16:37:27', '2026-06-17 16:37:27'),
-(6, N'Võ Th? Thông', N'123', N'GiaoVien', 1, '2026-06-17 21:45:49', '2026-06-17 21:45:49'),
-(1001, N'Nguy?n H?u Cu?ng', N'123', N'GiaoVien', 1, '2026-06-30 04:18:59', '2026-06-30 04:18:59');
+(6, N'Võ Thị Thông', N'123', N'GiaoVien', 1, '2026-06-17 21:45:49', '2026-06-17 21:45:49'),
+(1001, N'Nguyễn Hữu Cường', N'123', N'GiaoVien', 1, '2026-06-30 04:18:59', '2026-06-30 04:18:59');
 SET IDENTITY_INSERT dbo.[TaiKhoan] OFF;
 GO
 

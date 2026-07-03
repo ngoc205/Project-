@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import api from '../api/axiosClient'
+import { useNotification } from '../components/NotificationProvider'
 
 export default function AdminCanBoPage() {
+  const { showSuccess, showError, showConfirm } = useNotification()
   const [list, setList] = useState([])
   const [editId, setEditId] = useState(null)
   const [search, setSearch] = useState('')
@@ -37,22 +39,28 @@ export default function AdminCanBoPage() {
   }
 
   const handleSubmit = async () => {
-    if (editId) {
-      await api.patch(`/can-bo/${editId}`, form)
-      setEditId(null)
-    } else {
-      await api.post('/can-bo', form)
+    try {
+      if (editId) {
+        await api.patch(`/can-bo/${editId}`, form)
+        setEditId(null)
+        showSuccess('Cập nhật cán bộ thành công!')
+      } else {
+        await api.post('/can-bo', form)
+        showSuccess('Thêm cán bộ thành công!')
+      }
+
+      setForm({
+        TenDangNhap: '',
+        MatKhau: '',
+        HoTen: '',
+        SoDienThoai: '',
+        ChucVu: '',
+      })
+
+      loadData()
+    } catch (err) {
+      showError(err.response?.data?.message || 'Lưu cán bộ thất bại!')
     }
-
-    setForm({
-      TenDangNhap: '',
-      MatKhau: '',
-      HoTen: '',
-      SoDienThoai: '',
-      ChucVu: '',
-    })
-
-    loadData()
   }
 
   const handleEdit = (item) => {
@@ -67,11 +75,21 @@ export default function AdminCanBoPage() {
   }
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm('Bạn có chắc muốn xóa cán bộ này không?')
-    if (!confirmDelete) return
+    const confirmed = await showConfirm({
+      title: 'Xác nhận xóa',
+      message: 'Bạn có chắc muốn xóa cán bộ này không?',
+      confirmText: 'Xóa',
+      danger: true,
+    })
+    if (!confirmed) return
 
-    await api.delete(`/can-bo/${id}`)
-    loadData()
+    try {
+      await api.delete(`/can-bo/${id}`)
+      await loadData()
+      showSuccess('Xóa cán bộ thành công!')
+    } catch (err) {
+      showError(err.response?.data?.message || 'Xóa cán bộ thất bại!')
+    }
   }
 
   return (

@@ -11,10 +11,13 @@ export default function LoginPage({ onNavigate }) {
   });
 
   const handleLogin = async () => {
-    console.log("Đang gửi đăng nhập:", formData);
+    const payload = {
+      TenDangNhap: formData.TenDangNhap.trim(),
+      MatKhau: formData.MatKhau.trim(),
+    };
 
     try {
-      const res = await api.post('/auth/login', formData);
+      const res = await api.post('/auth/login', payload);
 
       // Lưu Token và Role vào localStorage
       localStorage.setItem('token', res.data.accessToken);
@@ -41,7 +44,12 @@ export default function LoginPage({ onNavigate }) {
 
     } catch (err) {
       console.error("Lỗi đăng nhập:", err);
-      showError('Đăng nhập thất bại! Sai tên đăng nhập hoặc mật khẩu.');
+      if (!err.response) {
+        showError('Không kết nối được backend. Hãy chạy server ở cổng 3000.');
+        return;
+      }
+
+      showError(err.response?.data?.message || 'Đăng nhập thất bại! Sai tên đăng nhập hoặc mật khẩu.');
     }
   };
 

@@ -61,7 +61,7 @@ function formatDate(dateValue) {
 }
 
 export default function AdminLopHocPage() {
-  const { showError, showSuccess } = useNotification();
+  const { showError, showSuccess, showConfirm } = useNotification();
   const [classes, setClasses] = useState([]);
   const [options, setOptions] = useState({ khoi: [], giaoVien: [], hocSinh: [], canAssignStudents: false });
   const [form, setForm] = useState(emptyForm);
@@ -134,7 +134,7 @@ export default function AdminLopHocPage() {
   };
 
   useEffect(() => {
-    loadData().catch((err) => {
+    loadData().catch(() => {
       showError('Không tải được dữ liệu lớp học. Kiểm tra backend /lop-hoc.');
     });
   }, []);
@@ -227,7 +227,13 @@ export default function AdminLopHocPage() {
 
   const handleDelete = async () => {
     if (!selectedClass) return;
-    if (!window.confirm(`Bạn có chắc muốn xóa lớp ${selectedClass.TenLop}?`)) return;
+    const confirmed = await showConfirm({
+      title: 'Xác nhận xóa',
+      message: `Bạn có chắc muốn xóa lớp ${selectedClass.TenLop}?`,
+      confirmText: 'Xóa',
+      danger: true,
+    });
+    if (!confirmed) return;
 
     try {
       await api.delete(`/lop-hoc/${selectedClass.LopID}`);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './canhan.css'; 
 
 function ThongTinCaNhan({ teacherId, onNavigate }) {
@@ -56,7 +56,7 @@ function ThongTinCaNhan({ teacherId, onNavigate }) {
       } else {
         showModal('Lỗi', 'Có lỗi xảy ra khi lưu thông tin.', 'error');
       }
-    } catch (err) {
+    } catch {
       showModal('Lỗi kết nối', 'Lỗi kết nối đến máy chủ.', 'error');
     }
   };
@@ -81,7 +81,7 @@ function ThongTinCaNhan({ teacherId, onNavigate }) {
       } else {
         showModal('Lỗi', 'Mật khẩu không thể thay đổi', 'error');
       }
-    } catch (err) {
+    } catch {
       showModal('Lỗi kết nối', 'Lỗi kết nối đến máy chủ.', 'error');
     }
   };

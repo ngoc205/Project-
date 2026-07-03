@@ -3,7 +3,7 @@ import api from '../api/axiosClient';
 import { useNotification } from '../components/NotificationProvider';
 
 export default function AdminMonHocPage() {
-  const { showError, showSuccess } = useNotification();
+  const { showError, showSuccess, showConfirm } = useNotification();
   const [monHocs, setMonHocs] = useState([]);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -15,6 +15,8 @@ export default function AdminMonHocPage() {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
+
+  const normalizeSubjectName = (value) => value.trim().replace(/\s+/g, ' ').toLowerCase();
 
   const fetchMonHocs = async () => {
     try {
@@ -32,24 +34,41 @@ export default function AdminMonHocPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const tenMonHoc = formData.TenMonHoc.trim().replace(/\s+/g, ' ');
+      const existed = monHocs.some(
+        (mon) =>
+          normalizeSubjectName(mon.TenMonHoc) === normalizeSubjectName(tenMonHoc) &&
+          (!isEditing || Number(mon.MonHocID) !== Number(editId))
+      );
+
+      if (existed) {
+        showError('Môn học này đã có rồi, không thể thêm trùng!');
+        return;
+      }
+
       const payload = {
-        TenMonHoc: formData.TenMonHoc,
+        TenMonHoc: tenMonHoc,
         SoTiet: Number(formData.SoTiet),
         MoTa: formData.MoTa,
       };
 
       if (isEditing) {
-        await api.put(`/mon-hoc/${editId}`, payload);
+        const res = await api.put(`/mon-hoc/${editId}`, payload);
+        setMonHocs((prev) =>
+          prev.map((mon) => (Number(mon.MonHocID) === Number(editId) ? res.data : mon))
+        );
         showSuccess('Cập nhật môn học thành công!');
       } else {
-        await api.post('/mon-hoc', payload);
+        const res = await api.post('/mon-hoc', payload);
+        setMonHocs((prev) => [res.data, ...prev]);
+        setCurrentPage(1);
+        setSearch('');
         showSuccess('Thêm môn học thành công!');
       }
 
       setFormData({ TenMonHoc: '', SoTiet: '', MoTa: '' });
       setIsEditing(false);
       setEditId(null);
-      fetchMonHocs();
     } catch (err) {
       showError('Có lỗi xảy ra: ' + (err.response?.data?.message || err.message));
     }
@@ -66,15 +85,21 @@ export default function AdminMonHocPage() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Bạn có chắc muốn xóa môn học này?')) {
-      try {
-        await api.delete(`/mon-hoc/${id}`);
-        showSuccess('Xóa môn học thành công!');
-        fetchMonHocs();
-      } catch (err) {
-        console.error('Lỗi khi xóa môn học', err);
-        showError('Lỗi khi xóa môn học');
-      }
+    const confirmed = await showConfirm({
+      title: 'Xác nhận xóa',
+      message: 'Bạn có chắc muốn xóa môn học này?',
+      confirmText: 'Xóa',
+      danger: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      await api.delete(`/mon-hoc/${id}`);
+      showSuccess('Xóa môn học thành công!');
+      fetchMonHocs();
+    } catch (err) {
+      console.error('Lỗi khi xóa môn học', err);
+      showError('Lỗi khi xóa môn học');
     }
   };
 

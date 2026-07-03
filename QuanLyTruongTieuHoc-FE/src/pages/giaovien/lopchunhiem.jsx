@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getLopChuNhiem } from '../../api/giaovienApi';
 import './LopChuNhiem.css';
 

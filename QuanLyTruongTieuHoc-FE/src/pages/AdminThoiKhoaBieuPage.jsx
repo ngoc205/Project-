@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../api/axiosClient';
 import { useNotification } from '../components/NotificationProvider';
 
@@ -51,7 +51,7 @@ function classOptionLabel(lop) {
 }
 
 export default function AdminThoiKhoaBieuPage() {
-  const { showError, showSuccess } = useNotification();
+  const { showError, showSuccess, showConfirm } = useNotification();
   const [options, setOptions] = useState({ khoi: [], lop: [], thu: [], tietHoc: [], monHoc: [] });
   const [selectedKhoiId, setSelectedKhoiId] = useState('');
   const [selectedLopId, setSelectedLopId] = useState('');
@@ -87,14 +87,7 @@ export default function AdminThoiKhoaBieuPage() {
     setGrid({});
   };
 
-  // Auto-load timetable when class changes.
-  useEffect(() => {
-    if (selectedLopId) {
-      viewTimetable(selectedLopId);
-    }
-  }, [selectedLopId]);
-
-  const viewTimetable = async (lopId = selectedLopId) => {
+  const viewTimetable = useCallback(async (lopId = selectedLopId) => {
     if (!lopId) {
       setClassInfo(null);
       setGrid({});
@@ -114,7 +107,14 @@ export default function AdminThoiKhoaBieuPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedLopId, showError]);
+
+  // Auto-load timetable when class changes.
+  useEffect(() => {
+    if (selectedLopId) {
+      viewTimetable(selectedLopId);
+    }
+  }, [selectedLopId, viewTimetable]);
 
   const setSubject = (thuId, tietHocId, monHocId) => {
     setGrid((prev) => ({ ...prev, [cellKey(thuId, tietHocId)]: monHocId }));
@@ -122,7 +122,12 @@ export default function AdminThoiKhoaBieuPage() {
 
   const applyTimetable = async () => {
     if (!selectedLopId) return showError('Vui lòng chọn lớp!');
-    if (!window.confirm('Bạn có chắc muốn áp dụng thay đổi thời khóa biểu này?')) return;
+    const confirmed = await showConfirm({
+      title: 'Xác nhận cập nhật',
+      message: 'Bạn có chắc muốn áp dụng thay đổi thời khóa biểu này?',
+      confirmText: 'Áp dụng',
+    });
+    if (!confirmed) return;
 
     const entries = [];
     options.thu.forEach((thu) => {

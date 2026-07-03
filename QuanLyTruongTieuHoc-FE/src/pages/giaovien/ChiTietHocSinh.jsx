@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../../api/axiosClient'; // Import instance axios của bạn
 import './ChiTietHocSinh.css'; 
 

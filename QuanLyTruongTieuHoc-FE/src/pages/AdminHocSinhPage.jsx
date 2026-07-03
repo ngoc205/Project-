@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import api from '../api/axiosClient'
 import { useNotification } from '../components/NotificationProvider'
 
 export default function AdminHocSinhPage() {
-  const { showError } = useNotification()
+  const { showSuccess, showError } = useNotification()
   const [list, setList] = useState([])
   const [editId, setEditId] = useState(null)
   const [search, setSearch] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const [confirmAction, setConfirmAction] = useState(null)
+  const [processing, setProcessing] = useState(false)
   const itemsPerPage = 5
 
   const [form, setForm] = useState({
@@ -55,15 +57,23 @@ export default function AdminHocSinhPage() {
 
   const handleSubmit = async () => {
     if (editId) {
-      await api.patch(`/hoc-sinh/${editId}`, form)
-      setEditId(null)
-    } else {
-      await api.post('/hoc-sinh', form)
+      setConfirmAction({
+        type: 'update',
+        title: 'Xác nhận cập nhật',
+        message: 'Bạn có chắc muốn lưu thay đổi thông tin học sinh này không?',
+        confirmText: 'Cập nhật',
+      })
+      return
     }
 
-    resetForm()
-
-    loadData()
+    try {
+      await api.post('/hoc-sinh', form)
+      resetForm()
+      await loadData()
+      showSuccess('Thêm học sinh thành công!')
+    } catch (err) {
+      showError(err.response?.data?.message || 'Thêm học sinh thất bại!')
+    }
   }
 
   const uploadImageFile = async (file) => {
@@ -94,9 +104,49 @@ export default function AdminHocSinhPage() {
     })
   }
 
-  const handleDelete = async (id) => {
-    await api.delete(`/hoc-sinh/${id}`)
-    loadData()
+  const handleDelete = (item) => {
+    setConfirmAction({
+      type: 'delete',
+      id: item.HocSinhID,
+      title: 'Xác nhận xóa',
+      message: `Bạn có chắc muốn xóa học sinh "${item.TenHocSinh}" không?`,
+      confirmText: 'Xóa',
+    })
+  }
+
+  const closeConfirm = () => {
+    if (processing) return
+    setConfirmAction(null)
+  }
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return
+
+    setProcessing(true)
+    try {
+      if (confirmAction.type === 'update') {
+        await api.patch(`/hoc-sinh/${editId}`, form)
+        setEditId(null)
+        resetForm()
+        await loadData()
+        showSuccess('Cập nhật học sinh thành công!')
+      }
+
+      if (confirmAction.type === 'delete') {
+        await api.delete(`/hoc-sinh/${confirmAction.id}`)
+        await loadData()
+        showSuccess('Xóa học sinh thành công!')
+      }
+
+      setConfirmAction(null)
+    } catch (err) {
+      const fallbackMessage = confirmAction.type === 'delete'
+        ? 'Xóa học sinh thất bại!'
+        : 'Cập nhật học sinh thất bại!'
+      showError(err.response?.data?.message || fallbackMessage)
+    } finally {
+      setProcessing(false)
+    }
   }
 
   const totalPages = Math.ceil(list.length / itemsPerPage)
@@ -116,23 +166,6 @@ export default function AdminHocSinhPage() {
         <p style={{ color: '#666' }}>
           Thêm, sửa, xóa và tìm kiếm học sinh
         </p>
-      </div>
-
-      {/* SEARCH */}
-      <div style={{ marginBottom: 20 }}>
-        <input
-          placeholder="🔍 Tìm kiếm học sinh..."
-          value={search}
-          onChange={(e) => handleSearch(e.target.value)}
-          style={{
-            padding: 10,
-            width: '100%',
-            maxWidth: 400,
-            borderRadius: 8,
-            border: '1px solid #ccc',
-            outline: 'none'
-          }}
-        />
       </div>
 
       {/* FORM CARD */}
@@ -245,6 +278,22 @@ export default function AdminHocSinhPage() {
         overflow: 'hidden',
         boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
       }}>
+        <div style={{ padding: '16px 18px', borderBottom: '1px solid #e2e8f0' }}>
+          <input
+            placeholder="🔍 Tìm kiếm học sinh..."
+            value={search}
+            onChange={(e) => handleSearch(e.target.value)}
+            style={{
+              padding: 10,
+              width: '100%',
+              borderRadius: 8,
+              border: '1px solid #ccc',
+              outline: 'none',
+              boxSizing: 'border-box',
+              fontSize: 15,
+            }}
+          />
+        </div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead style={{ background: '#1a365d', color: 'white' }}>
             <tr>
@@ -285,7 +334,7 @@ export default function AdminHocSinhPage() {
                     Sửa
                   </button>
 
-                  <button onClick={() => handleDelete(item.HocSinhID)} style={btnDelete}>
+                  <button onClick={() => handleDelete(item)} style={btnDelete}>
                     Xóa
                   </button>
                 </td>
@@ -303,6 +352,15 @@ export default function AdminHocSinhPage() {
       </div>
 
       <Pagination currentPage={currentPage} totalPages={totalPages} onChange={setCurrentPage} />
+
+      {confirmAction && (
+        <ConfirmDialog
+          action={confirmAction}
+          processing={processing}
+          onCancel={closeConfirm}
+          onConfirm={handleConfirmAction}
+        />
+      )}
 
     </div>
   )
@@ -346,6 +404,55 @@ function Pagination({ currentPage, totalPages, onChange }) {
   )
 }
 
+function ConfirmDialog({ action, processing, onCancel, onConfirm }) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1500,
+        display: 'grid',
+        placeItems: 'center',
+        padding: 20,
+        background: 'rgba(15, 23, 42, 0.45)',
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="student-confirm-title"
+        style={{
+          width: 'min(430px, 100%)',
+          background: 'white',
+          borderRadius: 10,
+          padding: 22,
+          boxShadow: '0 24px 50px rgba(15, 23, 42, 0.28)',
+        }}
+      >
+        <h3 id="student-confirm-title" style={{ margin: '0 0 10px', color: '#1a365d' }}>
+          {action.title}
+        </h3>
+        <p style={{ margin: '0 0 20px', color: '#475569', lineHeight: 1.6 }}>
+          {action.message}
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+          <button type="button" onClick={onCancel} disabled={processing} style={btnCancel}>
+            Hủy
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={processing}
+            style={action.type === 'delete' ? btnConfirmDanger : btnConfirmPrimary}
+          >
+            {processing ? 'Đang xử lý...' : action.confirmText}
+          </button>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 const inputStyle = {
   padding: 10,
   borderRadius: 8,
@@ -379,4 +486,29 @@ const btnDelete = {
   border: 'none',
   borderRadius: 6,
   cursor: 'pointer'
+}
+
+const btnCancel = {
+  padding: '9px 14px',
+  background: 'white',
+  color: '#334155',
+  border: '1px solid #94a3b8',
+  borderRadius: 7,
+  cursor: 'pointer',
+  fontWeight: 700,
+}
+
+const btnConfirmPrimary = {
+  padding: '9px 14px',
+  background: '#1a365d',
+  color: 'white',
+  border: 'none',
+  borderRadius: 7,
+  cursor: 'pointer',
+  fontWeight: 700,
+}
+
+const btnConfirmDanger = {
+  ...btnConfirmPrimary,
+  background: '#b91c1c',
 }
