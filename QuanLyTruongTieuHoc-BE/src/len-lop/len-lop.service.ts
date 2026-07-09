@@ -5,19 +5,53 @@ import { DataSource } from 'typeorm';
 export class LenLopService {
   constructor(private readonly dataSource: DataSource) {}
 
+  private isHocKy1(term: { TenKy?: string }) {
+    return String(term.TenKy || '').includes('1');
+  }
+
+  private isHocKy2(term: { TenKy?: string }) {
+    return String(term.TenKy || '').includes('2');
+  }
+
   private gradeSummarySql(studentAlias: string, timeExpression: string) {
     return `
-      SELECT COUNT(mh.MonHocID) AS TongMon,
+      SELECT COUNT(requiredSubjects.MonHocID) AS TongMon,
         SUM(CASE WHEN dt.DiemMieng IS NOT NULL AND dt.DiemGiuaKy IS NOT NULL AND dt.DiemCuoiKy IS NOT NULL THEN 1 ELSE 0 END) AS TongMonDaCoDiem,
         AVG(CASE WHEN dt.DiemMieng IS NOT NULL AND dt.DiemGiuaKy IS NOT NULL AND dt.DiemCuoiKy IS NOT NULL
           THEN (dt.DiemMieng + dt.DiemGiuaKy * 2 + dt.DiemCuoiKy * 3) / 6.0
           ELSE NULL
         END) AS DiemTrungBinh
-      FROM MonHoc mh
-      LEFT JOIN DiemThi dt ON dt.MonHocID = mh.MonHocID
+      FROM (
+        SELECT DISTINCT subjectSource.MonHocID
+        FROM (
+          SELECT tkb.MonHocID
+          FROM ThoiKhoaBieu tkb
+          WHERE tkb.LopID = ${studentAlias}.LopID
+
+          UNION ALL
+
+          SELECT tkbFallback.MonHocID
+          FROM Lop currentLop
+          JOIN ThoiGian currentTerm ON currentTerm.ThoiGianID = currentLop.ThoiGianID
+          JOIN ThoiGian fallbackTerm ON fallbackTerm.TenNam = currentTerm.TenNam
+            AND fallbackTerm.TenKy LIKE N'%1%'
+          JOIN Lop fallbackLop ON fallbackLop.ThoiGianID = fallbackTerm.ThoiGianID
+            AND fallbackLop.KhoiID = currentLop.KhoiID
+            AND fallbackLop.TenLop = currentLop.TenLop
+          JOIN ThoiKhoaBieu tkbFallback ON tkbFallback.LopID = fallbackLop.LopID
+          WHERE currentLop.LopID = ${studentAlias}.LopID
+            AND NOT EXISTS (
+              SELECT 1
+              FROM ThoiKhoaBieu currentTkb
+              WHERE currentTkb.LopID = ${studentAlias}.LopID
+            )
+        ) subjectSource
+        JOIN MonHoc mh ON mh.MonHocID = subjectSource.MonHocID
+        WHERE ISNULL(mh.IsActive, 1) = 1
+      ) requiredSubjects
+      LEFT JOIN DiemThi dt ON dt.MonHocID = requiredSubjects.MonHocID
         AND dt.HocSinhID = ${studentAlias}.HocSinhID
         AND dt.ThoiGianID = ${timeExpression}
-      WHERE ISNULL(mh.IsActive, 1) = 1
     `;
   }
 
@@ -26,7 +60,7 @@ export class LenLopService {
     if (!rows.length) throw new BadRequestException('Bảng HocSinh cần có cột LopID để thực hiện lên lớp. Hãy cập nhật cấu trúc cơ sở dữ liệu trước.');
   }
 
-  private async validateTerms(sourceThoiGianId: number, targetThoiGianId: number) {
+  private async getTransitionMode(sourceThoiGianId: number, targetThoiGianId: number) {
     if (!sourceThoiGianId || !targetThoiGianId || sourceThoiGianId === targetThoiGianId) throw new BadRequestException('Vui lòng chọn hai năm học khác nhau.');
     const terms = await this.dataSource.query(`SELECT ThoiGianID, TenNam, TenKy, NgayBatDau FROM ThoiGian WHERE ThoiGianID IN (@0, @1)`, [sourceThoiGianId, targetThoiGianId]);
     if (terms.length !== 2) throw new BadRequestException('Năm học được chọn không tồn tại.');
@@ -34,9 +68,16 @@ export class LenLopService {
     const target = terms.find((term: { ThoiGianID: number }) => Number(term.ThoiGianID) === targetThoiGianId);
     const sourceYear = Number(String(source?.TenNam || '').match(/\d{4}/)?.[0]);
     const targetYear = Number(String(target?.TenNam || '').match(/\d{4}/)?.[0]);
-    if (!String(source?.TenKy || '').includes('2') || !String(target?.TenKy || '').includes('1') || targetYear !== sourceYear + 1) {
-      throw new BadRequestException('Lên lớp chỉ thực hiện từ Học kỳ 2 của năm này sang Học kỳ 1 của năm học kế tiếp.');
+
+    if (this.isHocKy1(source) && this.isHocKy2(target) && source?.TenNam === target?.TenNam) {
+      return 'semester' as const;
     }
+
+    if (this.isHocKy2(source) && this.isHocKy1(target) && targetYear === sourceYear + 1) {
+      return 'promotion' as const;
+    }
+
+    throw new BadRequestException('Chỉ hỗ trợ chuyển từ Học kỳ 1 sang Học kỳ 2 cùng năm, hoặc xét lên lớp từ Học kỳ 2 sang Học kỳ 1 năm kế tiếp.');
   }
 
   async getOptions() {
@@ -73,7 +114,31 @@ export class LenLopService {
 
   async preview(sourceThoiGianId: number, targetThoiGianId: number) {
     await this.ensureStudentClassColumn();
-    await this.validateTerms(sourceThoiGianId, targetThoiGianId);
+    const mode = await this.getTransitionMode(sourceThoiGianId, targetThoiGianId);
+
+    if (mode === 'semester') {
+      const classes = await this.dataSource.query(
+        `
+          SELECT l.LopID, l.TenLop, l.KhoiID, k.TenKhoi,
+            COUNT(hs.HocSinhID) AS TongSo,
+            COUNT(hs.HocSinhID) AS DuDieuKien,
+            0 AS OLaLop,
+            0 AS TotNghiep
+          FROM Lop l
+          JOIN Khoi k ON k.KhoiID = l.KhoiID
+          LEFT JOIN HocSinh hs ON hs.LopID = l.LopID AND ISNULL(hs.IsActive, 1) = 1
+          WHERE l.ThoiGianID = @0
+          GROUP BY l.LopID, l.TenLop, l.KhoiID, k.TenKhoi
+          ORDER BY l.KhoiID, l.TenLop
+        `,
+        [sourceThoiGianId],
+      );
+      const totals = classes.reduce((result: { tongSo: number; duDieuKien: number; oLaiLop: number; totNghiep: number }, item: any) => ({
+        tongSo: result.tongSo + Number(item.TongSo || 0), duDieuKien: result.duDieuKien + Number(item.DuDieuKien || 0), oLaiLop: result.oLaiLop, totNghiep: result.totNghiep,
+      }), { tongSo: 0, duDieuKien: 0, oLaiLop: 0, totNghiep: 0 });
+      return { mode, classes, totals };
+    }
+
     const maxGradeRows = await this.dataSource.query(`SELECT MAX(KhoiID) AS MaxKhoiID FROM Khoi`);
     const maxGrade = Number(maxGradeRows[0]?.MaxKhoiID || 0);
     const classes = await this.dataSource.query(
@@ -90,7 +155,25 @@ export class LenLopService {
         OUTER APPLY (
           ${this.gradeSummarySql('hs', 'l.ThoiGianID')}
         ) grade
-        WHERE tg.TenNam = (SELECT TenNam FROM ThoiGian WHERE ThoiGianID = @0)
+        WHERE (
+          l.ThoiGianID = @0
+          OR (
+            NOT EXISTS (
+              SELECT 1
+              FROM Lop sourceLop
+              JOIN HocSinh sourceHs ON sourceHs.LopID = sourceLop.LopID AND ISNULL(sourceHs.IsActive, 1) = 1
+              WHERE sourceLop.ThoiGianID = @0
+            )
+            AND l.ThoiGianID = (
+              SELECT TOP 1 fallbackTerm.ThoiGianID
+              FROM ThoiGian sourceTerm
+              JOIN ThoiGian fallbackTerm ON fallbackTerm.TenNam = sourceTerm.TenNam
+                AND fallbackTerm.TenKy LIKE N'%1%'
+              WHERE sourceTerm.ThoiGianID = @0
+              ORDER BY fallbackTerm.ThoiGianID DESC
+            )
+          )
+        )
         GROUP BY l.LopID, l.TenLop, l.KhoiID, k.TenKhoi
         ORDER BY l.KhoiID, l.TenLop
       `,
@@ -99,7 +182,7 @@ export class LenLopService {
     const totals = classes.reduce((result: { tongSo: number; duDieuKien: number; oLaiLop: number; totNghiep: number }, item: any) => ({
       tongSo: result.tongSo + Number(item.TongSo || 0), duDieuKien: result.duDieuKien + Number(item.DuDieuKien || 0), oLaiLop: result.oLaiLop + Number(item.OLaLop || 0), totNghiep: result.totNghiep + Number(item.TotNghiep || 0),
     }), { tongSo: 0, duDieuKien: 0, oLaiLop: 0, totNghiep: 0 });
-    return { classes, totals };
+    return { mode, classes, totals };
   }
 
   private targetClassName(name: string, targetKhoiId: number) {
@@ -108,14 +191,42 @@ export class LenLopService {
 
   async promote(sourceThoiGianId: number, targetThoiGianId: number) {
     await this.ensureStudentClassColumn();
-    await this.validateTerms(sourceThoiGianId, targetThoiGianId);
+    const mode = await this.getTransitionMode(sourceThoiGianId, targetThoiGianId);
+    if (mode === 'semester') return this.syncSemester(sourceThoiGianId, targetThoiGianId);
+
     const preview = await this.preview(sourceThoiGianId, targetThoiGianId);
     if (!preview.totals.tongSo) throw new BadRequestException('Năm học nguồn chưa có học sinh nào để lên lớp.');
 
     const result = await this.dataSource.transaction(async (manager) => {
       const maxGradeRows = await manager.query(`SELECT MAX(KhoiID) AS MaxKhoiID FROM Khoi`);
       const maxGrade = Number(maxGradeRows[0].MaxKhoiID);
-      const sourceClasses = await manager.query(`SELECT l.LopID, l.KhoiID, l.TenLop, l.GiaoVienID, l.ThoiGianID FROM Lop l JOIN ThoiGian tg ON tg.ThoiGianID = l.ThoiGianID WHERE tg.TenNam = (SELECT TenNam FROM ThoiGian WHERE ThoiGianID = @0) ORDER BY l.KhoiID, l.TenLop`, [sourceThoiGianId]);
+      const sourceClasses = await manager.query(
+        `
+          SELECT l.LopID, l.KhoiID, l.TenLop, l.GiaoVienID, l.ThoiGianID
+          FROM Lop l
+          WHERE (
+            l.ThoiGianID = @0
+            OR (
+              NOT EXISTS (
+                SELECT 1
+                FROM Lop sourceLop
+                JOIN HocSinh sourceHs ON sourceHs.LopID = sourceLop.LopID AND ISNULL(sourceHs.IsActive, 1) = 1
+                WHERE sourceLop.ThoiGianID = @0
+              )
+              AND l.ThoiGianID = (
+                SELECT TOP 1 fallbackTerm.ThoiGianID
+                FROM ThoiGian sourceTerm
+                JOIN ThoiGian fallbackTerm ON fallbackTerm.TenNam = sourceTerm.TenNam
+                  AND fallbackTerm.TenKy LIKE N'%1%'
+                WHERE sourceTerm.ThoiGianID = @0
+                ORDER BY fallbackTerm.ThoiGianID DESC
+              )
+            )
+          )
+          ORDER BY l.KhoiID, l.TenLop
+        `,
+        [sourceThoiGianId],
+      );
       let promoted = 0;
       let retained = 0;
       let graduated = 0;
@@ -170,7 +281,7 @@ export class LenLopService {
           SELECT l.LopID
           FROM Lop l
           JOIN ThoiGian tg ON tg.ThoiGianID = l.ThoiGianID
-          WHERE tg.TenNam = (SELECT TenNam FROM ThoiGian WHERE ThoiGianID = @0)
+          WHERE l.ThoiGianID = @0
             AND NOT EXISTS (SELECT 1 FROM HocSinh hs WHERE hs.LopID = l.LopID AND ISNULL(hs.IsActive, 1) = 1)
             AND NOT EXISTS (SELECT 1 FROM HocBa hb WHERE hb.LopID = l.LopID)
         `,
@@ -184,5 +295,80 @@ export class LenLopService {
       return { promoted, retained, graduated, backupCount, createdClasses, deletedOldClasses: deletableClasses.length };
     });
     return { message: 'Toàn bộ học sinh đủ điều kiện đã lên lớp.', ...result };
+  }
+
+  private async syncSemester(sourceThoiGianId: number, targetThoiGianId: number) {
+    const result = await this.dataSource.transaction(async (manager) => {
+      const sourceClasses = await manager.query(
+        `SELECT LopID, KhoiID, TenLop, GiaoVienID FROM Lop WHERE ThoiGianID = @0 ORDER BY KhoiID, TenLop`,
+        [sourceThoiGianId],
+      );
+      let moved = 0;
+      let createdClasses = 0;
+
+      const ensureClass = async (source: any) => {
+        const existing = await manager.query(
+          `SELECT TOP 1 LopID FROM Lop WHERE ThoiGianID = @0 AND KhoiID = @1 AND TenLop = @2`,
+          [targetThoiGianId, source.KhoiID, source.TenLop],
+        );
+        if (existing[0]) return Number(existing[0].LopID);
+
+        const inserted = await manager.query(
+          `INSERT INTO Lop (KhoiID, TenLop, ThoiGianID, GiaoVienID, NgayTao) OUTPUT INSERTED.LopID VALUES (@0, @1, @2, @3, GETDATE())`,
+          [source.KhoiID, source.TenLop, targetThoiGianId, source.GiaoVienID || null],
+        );
+        createdClasses += 1;
+        return Number(inserted[0].LopID);
+      };
+
+      const copyTimetable = async (sourceLopId: number, targetLopId: number) => {
+        await manager.query(
+          `
+            INSERT INTO ThoiKhoaBieu (LopID, ThuID, TietHocID, MonHocID, GiaoVienID, GhiChu)
+            SELECT @1, tkb.ThuID, tkb.TietHocID, tkb.MonHocID, tkb.GiaoVienID, tkb.GhiChu
+            FROM ThoiKhoaBieu tkb
+            WHERE tkb.LopID = @0
+              AND NOT EXISTS (
+                SELECT 1
+                FROM ThoiKhoaBieu targetTkb
+                WHERE targetTkb.LopID = @1
+                  AND targetTkb.ThuID = tkb.ThuID
+                  AND targetTkb.TietHocID = tkb.TietHocID
+              )
+          `,
+          [sourceLopId, targetLopId],
+        );
+      };
+
+      for (const source of sourceClasses) {
+        const students = await manager.query(
+          `SELECT HocSinhID FROM HocSinh WHERE LopID = @0 AND ISNULL(IsActive, 1) = 1`,
+          [source.LopID],
+        );
+        if (!students.length) continue;
+
+        const targetClassId = await ensureClass(source);
+        await copyTimetable(source.LopID, targetClassId);
+        await manager.query(
+          `UPDATE HocSinh SET LopID = @0 WHERE LopID = @1 AND ISNULL(IsActive, 1) = 1`,
+          [targetClassId, source.LopID],
+        );
+        moved += students.length;
+      }
+
+      await manager.query(`UPDATE ThoiGian SET IsCurrent = CASE WHEN ThoiGianID = @0 THEN 1 ELSE 0 END`, [targetThoiGianId]);
+
+      return { moved, createdClasses };
+    });
+
+    return {
+      message: 'Đã cập nhật học sinh sang học kỳ mới.',
+      promoted: result.moved,
+      retained: 0,
+      graduated: 0,
+      backupCount: 0,
+      createdClasses: result.createdClasses,
+      deletedOldClasses: 0,
+    };
   }
 }

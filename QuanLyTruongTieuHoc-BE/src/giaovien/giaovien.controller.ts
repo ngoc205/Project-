@@ -29,9 +29,9 @@ export class GiaovienController {
   @Put('canhan/change-password/:taiKhoanId')
   async changePassword(
     @Param('taiKhoanId') id: string,
-    @Body() payload: { MatKhauMoi: string }
+    @Body() payload: { MatKhauCu: string; MatKhauMoi: string }
   ) {
-    return this.giaovienService.changePassword(Number(id), payload.MatKhauMoi);
+    return this.giaovienService.changePassword(Number(id), payload.MatKhauCu, payload.MatKhauMoi);
   }
 
   @Get('options')

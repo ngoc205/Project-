@@ -19,6 +19,11 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString('vi-VN')
 }
 
+function formatClassName(student) {
+  if (!student.TenLop) return 'Chưa xếp lớp'
+  return student.TenKhoi ? `${student.TenLop} - ${student.TenKhoi}` : student.TenLop
+}
+
 function SearchPage() {
   const { showError } = useNotification()
   const [mode, setMode] = useState('student')
@@ -135,6 +140,7 @@ function SearchPage() {
                 <p>Mã HS: {student.HocSinhID}</p>
                 <p>Ngày sinh: {formatDate(student.NgaySinh)}</p>
                 <p>Giới tính: {student.GioiTinh || 'Chưa cập nhật'}</p>
+                <p>Lớp đang học: {formatClassName(student)}</p>
                 <p>Địa chỉ: {student.DiaChi || 'Chưa cập nhật'}</p>
                 <span>{student.IsActive === false ? 'Tạm ngưng' : 'Đang học'}</span>
               </div>

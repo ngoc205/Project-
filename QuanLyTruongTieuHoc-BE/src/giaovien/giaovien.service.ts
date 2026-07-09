@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
@@ -655,16 +655,33 @@ export class GiaovienService {
     return { message: 'Lưu thông tin thành công!' };
   }
 
-  async changePassword(taiKhoanId: number, matKhauMoi: string) {
+  async changePassword(taiKhoanId: number, matKhauCu: string, matKhauMoi: string) {
+    if (!matKhauCu) {
+      throw new BadRequestException('Vui lòng nhập mật khẩu cũ');
+    }
+
     if (!matKhauMoi || matKhauMoi.length > 30) {
       throw new BadRequestException('Mật khẩu không hợp lệ (tối đa 30 ký tự)');
+    }
+
+    const rows = await this.dataSource.query(
+      `SELECT MatKhau FROM TaiKhoan WHERE TaiKhoanID = @0`,
+      [taiKhoanId],
+    );
+
+    if (!rows[0]) {
+      throw new NotFoundException('Không tìm thấy tài khoản');
+    }
+
+    if (rows[0].MatKhau !== matKhauCu) {
+      throw new UnauthorizedException('Mật khẩu cũ không đúng');
     }
     
     await this.dataSource.query(
       `UPDATE TaiKhoan 
        SET MatKhau = @0 
        WHERE TaiKhoanID = @1`,
-      [matKhauMoi, taiKhoanId]
+      [matKhauMoi, taiKhoanId],
     );
     return { message: 'Mật khẩu đã thay đổi' };
   }

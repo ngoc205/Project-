@@ -1256,7 +1256,42 @@
   color: #087b6a;
 }
 
-.viewer-subject-slate {
+.viewer-subject-rose {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
+.viewer-subject-lime {
+  background: #ecfccb;
+  color: #4d7c0f;
+}
+
+.viewer-subject-cyan {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+.viewer-subject-peach {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.viewer-subject-indigo {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.viewer-subject-olive {
+  background: #f5f5dc;
+  color: #6b6b12;
+}
+
+.viewer-subject-coral {
+  background: #ffe1d6;
+  color: #b93815;
+}
+
+.viewer-subject-gray {
   background: #eef4fb;
   color: #536071;
 }

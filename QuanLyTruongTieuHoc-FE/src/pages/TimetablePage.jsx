@@ -17,6 +17,23 @@ function classOptionLabel(lop) {
   return `${lop.TenLop}${lop.TenGiaoVien ? ` - ${lop.TenGiaoVien}` : ' - Chưa phân công'}`;
 }
 
+const subjectColorClasses = [
+  'blue',
+  'pink',
+  'mint',
+  'yellow',
+  'lavender',
+  'teal',
+  'rose',
+  'lime',
+  'cyan',
+  'peach',
+  'indigo',
+  'olive',
+  'coral',
+  'gray',
+];
+
 function TimetablePage() {
   const [options, setOptions] = useState({ khoi: [], lop: [], thu: [], tietHoc: [], monHoc: [] });
   const [selectedKhoiId, setSelectedKhoiId] = useState('');
@@ -31,6 +48,19 @@ function TimetablePage() {
   }, [options.lop, selectedKhoiId]);
 
   const grid = useMemo(() => buildGrid(entries), [entries]);
+  const subjectColorMap = useMemo(() => {
+    const names = [
+      ...options.monHoc.map((subject) => subject.TenMonHoc),
+      ...entries.map((entry) => entry.TenMonHoc),
+    ]
+      .filter(Boolean)
+      .map((name) => name.trim());
+
+    return [...new Set(names)].reduce((map, name, index) => {
+      map[name.toLowerCase()] = subjectColorClasses[index % subjectColorClasses.length];
+      return map;
+    }, {});
+  }, [entries, options.monHoc]);
 
   useEffect(() => {
     api.get('/thoi-khoa-bieu/options')
@@ -136,12 +166,13 @@ function TimetablePage() {
                     {options.tietHoc.map((tiet) => (
                       <tr key={tiet.TietHocID}>
                         <td className="viewer-period">{tiet.TenTiet}</td>
-                        {options.thu.map((thu, index) => {
+                        {options.thu.map((thu) => {
                           const entry = grid[cellKey(thu.ThuID, tiet.TietHocID)];
+                          const colorClass = subjectColorMap[entry?.TenMonHoc?.trim().toLowerCase()] || 'gray';
                           return (
                             <td key={thu.ThuID}>
                               {entry?.TenMonHoc ? (
-                                <div className={`viewer-subject viewer-subject-${['blue', 'pink', 'mint', 'yellow', 'lavender', 'teal', 'slate'][index % 7]}`}>
+                                <div className={`viewer-subject viewer-subject-${colorClass}`}>
                                   {entry.TenMonHoc}
                                 </div>
                               ) : (

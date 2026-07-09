@@ -53,6 +53,13 @@ export class HocSinh {
   })
   IsActive: boolean;
 
+  @Column({
+    name: 'LopID',
+    type: 'int',
+    nullable: true,
+  })
+  LopID: number | null;
+
   @CreateDateColumn({
     name: 'NgayTao',
     type: 'datetime',

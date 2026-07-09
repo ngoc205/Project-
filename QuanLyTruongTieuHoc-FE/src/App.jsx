@@ -18,7 +18,7 @@ import './App.css'
 
 
 const authPages = ['login']
-const teacherPages = ['teacher-dashboard', 'lop-chu-nhiem', 'diem', 'chi-tiet-hs']
+const teacherPages = ['teacher-dashboard', 'lop-chu-nhiem', 'diem', 'chi-tiet-hs', 'teacher-canhan']
 
 const getSavedUser = () => {
   const savedUser = localStorage.getItem('user')

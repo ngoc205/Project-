@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import { HocSinh } from './entities/hoc-sinh.entity';
 
@@ -9,7 +9,33 @@ export class HocSinhService {
   constructor(
     @InjectRepository(HocSinh)
     private readonly hocSinhRepository: Repository<HocSinh>,
+    private readonly dataSource: DataSource,
   ) {}
+
+  private studentWithClassQuery(whereSql = '', params: unknown[] = []) {
+    return this.dataSource.query(
+      `
+      SELECT
+        hs.HocSinhID,
+        hs.TenHocSinh,
+        hs.NgaySinh,
+        hs.GioiTinh,
+        hs.DiaChi,
+        hs.AnhDaiDien,
+        hs.IsActive,
+        hs.NgayTao,
+        hs.LopID,
+        l.TenLop,
+        k.TenKhoi
+      FROM HocSinh hs
+      LEFT JOIN Lop l ON l.LopID = hs.LopID
+      LEFT JOIN Khoi k ON k.KhoiID = l.KhoiID
+      ${whereSql}
+      ORDER BY hs.HocSinhID DESC
+    `,
+      params,
+    );
+  }
 
   // ⭐ THÊM: CREATE
   async create(hocSinh: any) {
@@ -21,7 +47,7 @@ export class HocSinhService {
 
   // READ ALL (GIỮ NGUYÊN)
   findAll() {
-    return this.hocSinhRepository.find();
+    return this.studentWithClassQuery();
   }
 
   // READ ONE (GIỮ NGUYÊN)
@@ -38,16 +64,14 @@ export class HocSinhService {
     const normalizedKeyword = keyword.trim();
     if (!normalizedKeyword) return this.findAll();
 
-    return this.hocSinhRepository
-      .createQueryBuilder('hs')
-      .where('hs.TenHocSinh LIKE :keyword', {
-        keyword: `%${normalizedKeyword}%`,
-      })
-      .orWhere('CAST(hs.HocSinhID AS varchar) LIKE :keyword', {
-        keyword: `%${normalizedKeyword}%`,
-      })
-      .orderBy('hs.HocSinhID', 'DESC')
-      .getMany();
+    return this.studentWithClassQuery(
+      `
+      WHERE hs.TenHocSinh LIKE @0
+        OR CAST(hs.HocSinhID AS varchar) LIKE @0
+        OR l.TenLop LIKE @0
+      `,
+      [`%${normalizedKeyword}%`],
+    );
   }
 
   // UPDATE (GIỮ NGUYÊN)
