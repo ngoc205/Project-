@@ -66,7 +66,7 @@ export default function AdminDashboard({ page, onNavigate }) {
         {page === 'admin-taikhoan' && <AdminTaiKhoanPage />}
         {page === 'admin-giaovien' && <AdminGiaoVienPage />}
         {page === 'admin-hocsinh' && <AdminHocSinhPage />}
-        {page === 'admin-lophoc' && <AdminLopHocPage />}
+        {page === 'admin-lophoc' && <AdminLopHocPage onNavigate={onNavigate} />}
         {page === 'admin-thoikhoabieu' && <AdminThoiKhoaBieuPage />}
 
         {!developedPages.includes(page) && (

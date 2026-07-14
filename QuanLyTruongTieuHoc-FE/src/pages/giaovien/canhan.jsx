@@ -58,10 +58,19 @@ function ThongTinCaNhan({ teacherId, onNavigate }) {
     setModal((current) => ({ ...current, open: false }));
   };
 
+  const passwordPlaceholders = {
+    MatKhauCu: 'Nhập mật khẩu cũ',
+    MatKhauMoi: 'Nhập mật khẩu mới',
+    XacNhanMatKhau: 'Nhập lại mật khẩu mới'
+  };
+
   const renderPasswordInput = (field, value, onChange) => (
     <div className="password-input-wrap">
       <input
         type={showPassword[field] ? 'text' : 'password'}
+        name={`${field}-manual-input`}
+        autoComplete="new-password"
+        placeholder={passwordPlaceholders[field]}
         maxLength="30"
         value={value}
         onChange={onChange}

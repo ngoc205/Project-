@@ -11,6 +11,7 @@ export default function AdminHocSinhPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [confirmAction, setConfirmAction] = useState(null)
   const [processing, setProcessing] = useState(false)
+  const [importingExcel, setImportingExcel] = useState(false)
   const itemsPerPage = 5
 
   const [form, setForm] = useState({
@@ -93,6 +94,59 @@ export default function AdminHocSinhPage() {
     }
   }
 
+  const handleExcelImport = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setImportingExcel(true)
+    try {
+      const text = await file.text()
+      const normalizedText = text.replace(/\r/g, '').trim()
+      if (!normalizedText) {
+        throw new Error('File trống. Vui lòng chọn file có dữ liệu.')
+      }
+
+      const rows = normalizedText
+        .split('\n')
+        .map((row) => row.split(/;|,|\t/).map((cell) => cell.trim()))
+        .filter((row) => row.some(Boolean))
+
+      if (rows.length < 2) {
+        throw new Error('File mẫu không hợp lệ. Vui lòng dùng mẫu có ít nhất 1 dòng dữ liệu.')
+      }
+
+      const headers = rows[0].map((header) => header.toLowerCase())
+      const nameIndex = headers.findIndex((header) => ['tenhocsinh', 'ten', 'họ tên', 'hoten'].includes(header))
+      const dobIndex = headers.findIndex((header) => ['ngaysinh', 'ngay sinh', 'dob', 'birthday'].includes(header))
+      const genderIndex = headers.findIndex((header) => ['gioitinh', 'giới tính', 'sex', 'gender'].includes(header))
+      const addressIndex = headers.findIndex((header) => ['diachi', 'địa chỉ', 'address'].includes(header))
+
+      if (nameIndex === -1) {
+        throw new Error('File phải có cột tên học sinh.')
+      }
+
+      const payload = rows.slice(1).map((row) => ({
+        TenHocSinh: row[nameIndex] || '',
+        NgaySinh: row[dobIndex] || null,
+        GioiTinh: row[genderIndex] || 'Nam',
+        DiaChi: row[addressIndex] || '',
+      })).filter((student) => student.TenHocSinh)
+
+      if (!payload.length) {
+        throw new Error('Không có học sinh hợp lệ để nhập.')
+      }
+
+      await api.post('/hoc-sinh/bulk', payload)
+      await loadData()
+      showSuccess(`Đã nhập thành công ${payload.length} học sinh từ file.`)
+    } catch (err) {
+      showError(err.response?.data?.message || err.message || 'Nhập học sinh từ Excel thất bại!')
+    } finally {
+      setImportingExcel(false)
+      event.target.value = ''
+    }
+  }
+
   const handleEdit = (item) => {
     setEditId(item.HocSinhID)
     setForm({
@@ -164,7 +218,30 @@ export default function AdminHocSinhPage() {
           🎓 Quản lý Học sinh
         </h2>
         <p style={{ color: '#666' }}>
-          Thêm, sửa, xóa và tìm kiếm học sinh
+          Thêm, sửa, xóa, tìm kiếm và nhập hàng loạt học sinh từ file Excel
+        </p>
+      </div>
+
+      <div style={{
+        background: 'white',
+        padding: 20,
+        borderRadius: 10,
+        marginBottom: 16,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+          <strong>Nhập hàng loạt từ file Excel/CSV:</strong>
+          <input
+            type="file"
+            accept=".csv,.txt"
+            onChange={handleExcelImport}
+            disabled={importingExcel}
+            style={{ ...inputStyle, padding: '8px 10px' }}
+          />
+          {importingExcel && <span style={{ color: '#64748b' }}>Đang nhập...</span>}
+        </div>
+        <p style={{ margin: '0 0 10px', color: '#64748b', fontSize: 13 }}>
+          File nên có các cột: Tên học sinh, Ngày sinh, Giới tính, Địa chỉ. Có thể dùng dấu phẩy, chấm phẩy hoặc tab.
         </p>
       </div>
 
@@ -451,6 +528,16 @@ function ConfirmDialog({ action, processing, onCancel, onConfirm }) {
       </section>
     </div>
   )
+}
+
+const buttonPrimaryStyle = {
+  border: 'none',
+  borderRadius: 8,
+  padding: '10px 16px',
+  backgroundColor: '#1f5aa6',
+  color: 'white',
+  fontWeight: 700,
+  cursor: 'pointer',
 }
 
 const inputStyle = {

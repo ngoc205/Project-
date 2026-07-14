@@ -1,6 +1,12 @@
 .site-shell {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: var(--page);
+}
+
+main {
+  flex: 1;
 }
 
 .container {
@@ -923,6 +929,7 @@
 .site-footer {
   background: var(--blue-700);
   color: white;
+  margin-top: 0;
 }
 
 .footer-grid {
@@ -962,6 +969,7 @@
   text-align: center;
   padding: 16px 20px;
   font-size: 13px;
+  margin-top: 0;
 }
 
 @media (max-width: 980px) {

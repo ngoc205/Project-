@@ -45,6 +45,20 @@ export class HocSinhService {
     return await this.hocSinhRepository.save(hocSinh);
   }
 
+  async createMany(hocSinhs: any[]) {
+    if (!Array.isArray(hocSinhs) || hocSinhs.length === 0) {
+      return [];
+    }
+
+    const normalizedStudents = hocSinhs.map((hocSinh) => ({
+      ...hocSinh,
+      GioiTinh: hocSinh.GioiTinh && hocSinh.GioiTinh !== '' ? hocSinh.GioiTinh : 'Nam',
+      IsActive: hocSinh.IsActive ?? true,
+    }));
+
+    return await this.hocSinhRepository.save(normalizedStudents);
+  }
+
   // READ ALL (GIỮ NGUYÊN)
   findAll() {
     return this.studentWithClassQuery();

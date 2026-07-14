@@ -1,20 +1,41 @@
 import { useEffect, useState } from 'react';
 import api from '../../api/axiosClient'; // Import instance axios của bạn
+import { useNotification } from '../../components/NotificationProvider';
 import './ChiTietHocSinh.css'; 
 
 const ChiTietHocSinh = ({ hocSinhId, onNavigate }) => {
+  const { showSuccess, showError } = useNotification();
   const [info, setInfo] = useState(null);
+  const [comment, setComment] = useState('');
+  const [savingComment, setSavingComment] = useState(false);
 
   const formatScore = (score) => (
     score === null || score === undefined || score === '' ? '-' : Number(score).toFixed(1)
   );
 
   useEffect(() => {
-    // Gọi API đã tạo ở Backend
     api.get(`/api/giaovien/hocsinh/detail/${hocSinhId}`)
-      .then(res => setInfo(res.data))
+      .then(res => {
+        setInfo(res.data);
+        setComment(res.data?.NhanXet || '');
+      })
       .catch(err => console.error("Lỗi lấy chi tiết:", err));
   }, [hocSinhId]);
+
+  const handleSaveComment = async () => {
+    if (!hocSinhId) return;
+    setSavingComment(true);
+    try {
+      await api.put(`/api/giaovien/hocsinh/${hocSinhId}/nhan-xet`, { NhanXet: comment });
+      setInfo((prev) => prev ? { ...prev, NhanXet: comment } : prev);
+      showSuccess('Đã lưu nhận xét học bạ thành công!');
+    } catch (err) {
+      console.error('Lỗi lưu nhận xét:', err);
+      showError(err.response?.data?.message || 'Không thể lưu nhận xét. Vui lòng thử lại.');
+    } finally {
+      setSavingComment(false);
+    }
+  };
 
   if (!info) return <div className="page-container">Đang tải dữ liệu...</div>;
 
@@ -40,7 +61,16 @@ const ChiTietHocSinh = ({ hocSinhId, onNavigate }) => {
         <p><strong>Quê quán:</strong> {info.DiaChi}</p>
         <hr />
         <p><strong>Nhận xét từ giáo viên (Học bạ):</strong></p>
-        <p className="nhan-xet-box">{info.NhanXet || 'Chưa có nhận xét'}</p>
+        <textarea
+          className="nhan-xet-box"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          rows={5}
+          placeholder="Nhập nhận xét cho học sinh..."
+        />
+        <button className="btn-detail" onClick={handleSaveComment} disabled={savingComment} style={{ marginTop: 10 }}>
+          {savingComment ? 'Đang lưu...' : 'Lưu nhận xét'}
+        </button>
         <p><strong>Trạng thái lên lớp:</strong> {duDieuKienLenLop ? 'Đạt' : 'Chưa đạt'}</p>
       </div>
 

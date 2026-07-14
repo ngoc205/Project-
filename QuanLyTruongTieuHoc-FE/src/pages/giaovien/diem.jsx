@@ -9,6 +9,7 @@ const Diem = ({ teacherId, onNavigate }) => {
   const [lopChuNhiem, setLopChuNhiem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [importingExcel, setImportingExcel] = useState(false);
   
   // State quản lý Modal thông báo
   const [modal, setModal] = useState({ isOpen: false, message: '', type: 'success' });
@@ -169,13 +170,94 @@ const Diem = ({ teacherId, onNavigate }) => {
 
   const closeModal = () => setModal({ ...modal, isOpen: false });
 
+  const handleExcelImport = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImportingExcel(true);
+    try {
+      const text = await file.text();
+      const rows = text
+        .split(/\r?\n/)
+        .map((row) => row.split(',').map((cell) => cell.trim()))
+        .filter((row) => row.some(Boolean));
+
+      if (rows.length < 2) {
+        throw new Error('File phải có ít nhất 1 dòng dữ liệu điểm.');
+      }
+
+      const headers = rows[0].map((header) => header.toLowerCase());
+      const idIndex = headers.findIndex((header) => ['hocsinhid', 'id', 'mahocsinh'].includes(header));
+      const nameIndex = headers.findIndex((header) => ['tenhocsinh', 'hoten', 'ten'].includes(header));
+      const hs1Index = headers.findIndex((header) => ['heso1', 'diemmieng', 'diem1'].includes(header));
+      const hs2Index = headers.findIndex((header) => ['heso2', 'diemgiuaky', 'diem2'].includes(header));
+      const hs3Index = headers.findIndex((header) => ['heso3', 'diemcuoiky', 'diem3'].includes(header));
+
+      if (idIndex === -1 && nameIndex === -1) {
+        throw new Error('File phải có cột mã hoặc tên học sinh.');
+      }
+
+      const importedRows = rows.slice(1).map((row) => ({
+        hocSinhId: row[idIndex] || '',
+        tenHocSinh: row[nameIndex] || '',
+        heSo1: row[hs1Index] || '',
+        heSo2: row[hs2Index] || '',
+        heSo3: row[hs3Index] || '',
+      })).filter((row) => row.hocSinhId || row.tenHocSinh);
+
+      if (!importedRows.length) {
+        throw new Error('Không có học sinh hợp lệ để nhập điểm.');
+      }
+
+      const nextStudents = students.map((student) => {
+        const match = importedRows.find((item) => {
+          const byId = item.hocSinhId && String(item.hocSinhId) === String(student.HocSinhID);
+          const byName = item.tenHocSinh && String(item.tenHocSinh).toLowerCase() === String(student.TenHocSinh || '').toLowerCase();
+          return byId || byName;
+        });
+
+        if (!match) return student;
+
+        return {
+          ...student,
+          HeSo1: match.heSo1 !== '' ? match.heSo1 : student.HeSo1,
+          HeSo2: match.heSo2 !== '' ? match.heSo2 : student.HeSo2,
+          HeSo3: match.heSo3 !== '' ? match.heSo3 : student.HeSo3,
+        };
+      });
+
+      setStudents(nextStudents);
+
+      const payload = {
+        LopID: lopChuNhiem?.LopID || lopChuNhiem?.id,
+        MonHocID: Number(selectedSubject),
+        scores: nextStudents.map((student) => ({
+          HocSinhID: student.HocSinhID,
+          DiemMieng: student.HeSo1,
+          DiemGiuaKy: student.HeSo2,
+          DiemCuoiKy: student.HeSo3,
+        })),
+      };
+
+      await api.put(`/api/giaovien/${teacherId || 3}/diem`, payload);
+      setModal({ isOpen: true, message: `Đã nhập điểm cho ${importedRows.length} học sinh từ file.`, type: 'success' });
+    } catch (err) {
+      console.error('Lỗi nhập điểm từ file:', err);
+      const message = err.response?.data?.message || err.message || 'Không thể nhập điểm từ file.';
+      setModal({ isOpen: true, message, type: 'error' });
+    } finally {
+      setImportingExcel(false);
+      event.target.value = '';
+    }
+  };
+
   if (loading) return <div className="lop-container">Đang tải dữ liệu...</div>;
 
   return (
     <div className="lop-container">
       <h2>Nhập điểm lớp{lopChuNhiem?.tenLop ? ` - ${lopChuNhiem.tenLop}` : ''}</h2>
 
-      <div className="subject-selector" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div className="subject-selector" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
         <label htmlFor="subject-select" style={{ fontWeight: 'bold' }}>Chọn môn học:</label>
         <select 
           id="subject-select" 
@@ -188,6 +270,11 @@ const Diem = ({ teacherId, onNavigate }) => {
             <option key={sub.MonHocID} value={sub.MonHocID}>{sub.TenMonHoc}</option>
           ))}
         </select>
+
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#eff6ff', color: '#1f5aa6', padding: '8px 12px', borderRadius: '6px', fontWeight: 700, cursor: 'pointer' }}>
+          <input type="file" accept=".csv,.txt" onChange={handleExcelImport} style={{ display: 'none' }} />
+          {importingExcel ? 'Đang nhập...' : '📥 Nhập điểm từ Excel'}
+        </label>
       </div>
 
       <table className="lop-table">

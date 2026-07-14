@@ -60,7 +60,7 @@ function formatDate(dateValue) {
   return new Date(dateValue).toLocaleDateString('vi-VN');
 }
 
-export default function AdminLopHocPage() {
+export default function AdminLopHocPage({ onNavigate }) {
   const { showError, showSuccess, showConfirm } = useNotification();
   const [classes, setClasses] = useState([]);
   const [options, setOptions] = useState({ khoi: [], giaoVien: [], hocSinh: [], canAssignStudents: false });
@@ -365,9 +365,18 @@ export default function AdminLopHocPage() {
                 <h3 style={{ color: '#1a365d', margin: 0 }}>Thêm học sinh</h3>
                 <p style={{ color: '#64748b', margin: '6px 0 0' }}>Gõ mã hoặc tên học sinh, chọn từ gợi ý để thêm vào danh sách lớp.</p>
               </div>
-              <span style={{ background: '#eff6ff', color: '#1f5aa6', padding: '8px 12px', borderRadius: '999px', fontWeight: 700 }}>
-                {selectedStudents.length} học sinh đã thêm
-              </span>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ background: '#eff6ff', color: '#1f5aa6', padding: '8px 12px', borderRadius: '999px', fontWeight: 700 }}>
+                  {selectedStudents.length} học sinh đã thêm
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onNavigate?.('admin-hocsinh')}
+                  style={{ border: 'none', background: 'transparent', color: '#1f5aa6', fontWeight: 700, textDecoration: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  + Thêm mới học sinh
+                </button>
+              </div>
             </div>
 
             <div style={{ position: 'relative', marginBottom: '18px' }}>
@@ -409,10 +418,10 @@ export default function AdminLopHocPage() {
                           <strong style={{ color: '#1e293b' }}>{student.HocSinhID} - {student.TenHocSinh}</strong><br />
                           <small style={{ color: '#64748b' }}>{student.GioiTinh} - {student.DiaChi || 'Chưa có quê quán'}</small><br />
                           {student.TenLop && !isCurrentClass && (
-                            <small style={{ color: '#b45309', fontWeight: 700 }}>Đã ở lớp {student.TenLop}</small>
+                            <span style={{ display: 'inline-block', marginTop: '6px', padding: '4px 8px', borderRadius: '999px', background: '#fef2f2', color: '#b45309', fontWeight: 700, fontSize: '12px' }}>Đã ở lớp {student.TenLop}</span>
                           )}
                           {isCurrentClass && (
-                            <small style={{ color: '#16a34a', fontWeight: 700 }}>Đang ở lớp này</small>
+                            <span style={{ display: 'inline-block', marginTop: '6px', padding: '4px 8px', borderRadius: '999px', background: '#ecfdf5', color: '#16a34a', fontWeight: 700, fontSize: '12px' }}>Đang ở lớp này</span>
                           )}
                         </span>
                         <span style={{ alignSelf: 'center', color: selected ? '#16a34a' : '#2563eb', fontWeight: 700 }}>

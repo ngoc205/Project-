@@ -575,6 +575,28 @@ export class GiaovienService {
     };
   }
 
+  async updateNhanXetHocSinh(hocSinhId: number, nhanXet: string) {
+    const rows = await this.dataSource.query(`SELECT TOP 1 HocSinhID, LopID FROM HocSinh WHERE HocSinhID = @0`, [hocSinhId]);
+    if (!rows[0]) throw new BadRequestException('Không tìm thấy học sinh để cập nhật nhận xét.');
+
+    const lopId = rows[0].LopID;
+    if (!lopId) {
+      return { success: true, message: 'Học sinh chưa thuộc lớp nào nên không thể lưu nhận xét.' };
+    }
+
+    await this.dataSource.query(
+      `
+      IF EXISTS (SELECT 1 FROM HocBa WHERE HocSinhID = @0 AND LopID = @1)
+        UPDATE HocBa SET NhanXet = @2 WHERE HocSinhID = @0 AND LopID = @1
+      ELSE
+        INSERT INTO HocBa (HocSinhID, LopID, NhanXet, DoLenLop, NgayTao) VALUES (@0, @1, @2, 0, GETDATE())
+      `,
+      [hocSinhId, lopId, nhanXet || ''],
+    );
+
+    return { success: true, message: 'Cập nhật nhận xét thành công.' };
+  }
+
   async luuBangDiemLopChuNhiem(id: number, payload: LuuDiemPayload) {
     const lop = await this.getLopChuNhiemRow(id);
     if (!lop) throw new BadRequestException('Giáo viên chưa có lớp chủ nhiệm.');

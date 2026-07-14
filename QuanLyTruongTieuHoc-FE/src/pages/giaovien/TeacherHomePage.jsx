@@ -79,7 +79,6 @@ const TeacherHomePage = ({ teacherId }) => {
                         {lesson ? (
                           <div className="lesson-info">
                             <span className="subject-name">{lesson.tenMonHoc}</span>
-                            <span className="class-name">Lớp: {lesson.tenLop}</span>
                             {lesson.phongHoc && <span className="room-name">Phòng: {lesson.phongHoc}</span>}
                           </div>
                         ) : (

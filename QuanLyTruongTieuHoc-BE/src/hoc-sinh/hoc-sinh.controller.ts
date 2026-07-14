@@ -22,6 +22,11 @@ export class HocSinhController {
     return this.hocSinhService.create(hocSinh);
   }
 
+  @Post('bulk')
+  createMany(@Body() hocSinhs: any[]) {
+    return this.hocSinhService.createMany(hocSinhs);
+  }
+
   // READ ALL
   @Get()
   findAll() {

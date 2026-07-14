@@ -95,6 +95,11 @@ export class GiaovienController {
     return this.giaovienService.luuBangDiemLopChuNhiem(Number(id), body);
   }
 
+  @Put('hocsinh/:id/nhan-xet')
+  updateNhanXetHocSinh(@Param('id') id: string, @Body() body: { NhanXet?: string }) {
+    return this.giaovienService.updateNhanXetHocSinh(Number(id), body?.NhanXet ?? '');
+  }
+
   @Put(':id')
   update(@Param('id') id: string, @Body() body: Parameters<GiaovienService['update']>[1]) {
     return this.giaovienService.update(Number(id), body);
